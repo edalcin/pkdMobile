@@ -4,6 +4,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    # ponytail: só patches. Versões minor/major novas de AGP, Kotlin, Gradle e
+    # androidx exigem compileSdk 36+; subir o compileSdk (e o SDK local/CI)
+    # quando formos adotá-las, e então remover este ignore.
+    ignore:
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major", "version-update:semver-minor"]
 
   - package-ecosystem: "github-actions"
     directory: "/"
