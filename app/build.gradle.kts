@@ -13,8 +13,11 @@ android {
         applicationId = "in.dalc.pkdmobile"
         minSdk = 31
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0"
+        // Release builds take the version from the git tag (v0.1.2 → "0.1.2") and a
+        // versionCode that always grows (GitHub Actions run number). Obtainium compares
+        // the installed versionName with the tag; a fixed value makes it offer the update forever.
+        versionCode = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull() ?: 1
+        versionName = System.getenv("GITHUB_REF_NAME")?.takeIf { it.startsWith("v") }?.removePrefix("v") ?: "0.0.0-dev"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
