@@ -93,7 +93,10 @@ fun PkdApp() {
             startDestination = PkdTab.Notas.route,
             modifier = Modifier.padding(scaffoldPadding),
         ) {
-            composable(PkdTab.Notas.route) { NotesScreen(onOpen = { navController.navigate("nota/$it") }) }
+            composable(PkdTab.Notas.route) {
+                NotesScreen(onOpen = { navController.navigate("nota/$it") }, onUnsent = { navController.navigate("naoenviados") })
+            }
+            composable("naoenviados") { UnsentScreen(onBack = { navController.popBackStack() }) }
             PkdTab.entries.filter { it != PkdTab.Notas }.forEach { tab ->
                 composable(tab.route) { PkdTabScreen(tab) }
             }

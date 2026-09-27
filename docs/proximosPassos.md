@@ -20,28 +20,35 @@ Atualizado em 2026-09-27.
   - Detalhe: texto simples com salvamento automático (1ª linha = título), Tags (pôr/tirar), favoritar.
   - Logout (ícone na barra de Notas) apaga cache e cookies.
   - Kotlin + Compose + Material 3, minSdk 31, pacote `in.dalc.pkdmobile`; Memórias, Documentos e Busca ainda vazias.
-- **PKD (commit no `main` do `../pkd`, ainda não em produção):** `GET /api/notes` devolve também `body_html`, `tags` e `updated_at`. Sem esse deploy o app funciona, mas os cartões mostram só o título.
-- **Limites conhecidos da v0.2.0:**
-  - Sem fila de envio: editar sem rede mostra "Não salvo" e a edição fica só na tela.
+- **PKD em produção com o `GET /api/notes` novo** (`body_html`, `tags`, `updated_at`): os cartões mostram trecho e Tags no celular.
+- **Limites conhecidos:**
   - O app edita a Nota como texto simples: a formatação rica feita na PWA se perde quando o app salva o texto.
-  - O PATCH do PKD ignora `favorite`; o app usa `POST /api/documents/{id}/favorite` (alterna).
+  - O PATCH do PKD ignora `favorite`; o app usa `POST /api/documents/{id}/favorite` (alterna) só quando o estado no PKD é diferente do pedido.
 
 - **`v0.2.1`: Cloudflare Access.** `pkd.dalc.in` fica atrás do Cloudflare Access. Sem autorização, o Access responde `302` para o login dele (HTML), e a `v0.2.0` mostrava "Value <html> … cannot be converted to JSONObject". Decisão do usuário: **Service Token**.
   - A tela de login tem os campos opcionais `CF-Access-Client-Id`/`-Secret`, que ficam cifrados no Keystore. O app manda os dois headers em todo pedido.
   - Um `3xx` mostra "O Cloudflare Access recusou o pedido. Confira o Service Token."
   - Se o primeiro login falha, o app esquece o servidor, e a tela não diz mais "A sessão expirou".
+- **Login no celular com o Service Token: funciona** (usuário, 2026-09-27). Policy `pkdMobile service token` (Service Auth) na aplicação `pkd` do Access.
+- **`v0.3.0`: slice 3 feito** (fila de envio + criar Nota). Testado no emulador contra um PKD local, com o PKD parado e depois de volta:
+  - Tabela Room `outbox`; o banco foi para a versão 2 (`fallbackToDestructiveMigration`: a v1 era só cache).
+  - Toda mudança vai primeiro ao cache e à fila, e depois ao PKD, em ordem. A Nota nova tem id negativo e mostra "Na fila" até o PKD dar o id real.
+  - Edições na mesma Nota enquanto esperam se juntam num item só; editar uma Nota ainda não enviada muda o item `create`.
+  - A fila vai a cada mudança e a cada atualização (abrir, voltar do background, pull-to-refresh). Rede/`5xx`/`401`/`429` param a fila e mantêm tudo; outro `4xx` manda o item para **Não enviados** (Copiar, Recriar com o texto editável, Descartar). Ícone com contador na barra de Notas.
+  - Com itens na fila, a atualização não troca o cache das Notas (só as Tags).
+  - Logout com fila avisa quantos itens serão perdidos.
+  - **Desvio do ADR 0001:** sem WorkManager. A spec não tem sync em background, então a fila roda no processo do app (`Notes.flush`). Adotar WorkManager só se o envio em background passar a ser requisito.
+  - O POST de uma Nota com título repetido não falha: o PKD dá outro título ("… (2)").
 
 ## Próxima ação
 
-1. **Usuário, no Zero Trust:** criar um Service Token (Access → Service credentials) e adicionar à aplicação `pkd.dalc.in` uma policy com a action **Service Auth** que inclua esse token. No celular: "Sair e trocar de servidor", e depois login com o token. **Ainda não testado com o token real.**
-2. Pôr o PKD em produção (passos em "Deploy do PKD", abaixo) e confirmar os trechos e Tags nos cartões.
-3. Slice 3: **fila de envio**, com criar Nota (FAB → bottom sheet "Nova Nota").
+1. Slice 4: **Memórias** (lista por mês, bottom sheet "Nova Memória" pela fila de envio).
 
 ## Slices (em ordem)
 
 1. ~~Login + sessão~~ (feito na v0.2.0).
 2. ~~Cache Room + lista de Notas~~ (feito na v0.2.0; criar Nota vai para o slice 3).
-3. **Fila de envio** (WorkManager): `idempotency_key`, retry em `5xx`/rede, "Não enviados" em `4xx`, `401` → pede login. Inclui criar Nota (FAB) e a edição offline.
+3. ~~Fila de envio~~ (feita na v0.3.0, sem WorkManager). Inclui criar Nota (FAB) e a edição offline.
 4. **Memórias**: lista por mês, bottom sheet "Nova Memória".
 5. **Documentos/Árvore**: `GET /api/tree`, corpo em WebView só leitura, Associações, Arquivos para ver/baixar.
 6. **Busca**: servidor (`/api/tree?q=`); offline, busca local com "resultados parciais".
