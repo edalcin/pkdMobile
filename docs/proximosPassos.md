@@ -74,7 +74,7 @@ Atualizado em 2026-09-27.
 Os 8 slices da v1 estão feitos. Falta da spec:
 1. **Configurações** (spec §3): biometria (liga/desliga, BiometricPrompt), logout, lista Não enviados. Hoje logout e Não enviados ficam na barra de Notas.
 2. **Detalhe da Nota ainda sem "Converter"/"Apagar"** — fora da v1 (spec §9), sem ação.
-2. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
+3. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
 
