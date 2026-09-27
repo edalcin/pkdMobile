@@ -1,0 +1,7 @@
+<!-- Gradiente do fundo do ícone do PKD (../pkd/frontend/public/icons/pwa/icon-512.png). -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android">
+    <gradient
+        android:angle="270"
+        android:startColor="#1A677B"
+        android:endColor="#062A4C" />
+</shape>
