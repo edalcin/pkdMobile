@@ -28,11 +28,16 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.NavType
+import androidx.navigation.navArgument
+import androidx.compose.runtime.LaunchedEffect
+import `in`.dalc.pkdmobile.data.Notes
+import `in`.dalc.pkdmobile.data.Session
+import androidx.compose.foundation.layout.WindowInsets
 
 /**
- * Casca de navegação da v1 (direção A · Notas-first): barra inferior com 4 abas.
- * Cada aba mostra sua TopAppBar e um estado vazio em pt-BR; sem dados reais ainda
- * (cache Room e fila de envio chegam em slices futuros — ver docs/proximosPassos.md).
+ * Casca de navegação da v1 (direção A · Notas-first): login, depois barra inferior com 4 abas.
+ * Notas já usam o cache Room; as outras abas ainda mostram um estado vazio (ver docs/proximosPassos.md).
  */
 
 private enum class PkdTab(val route: String, val title: String, val icon: ImageVector, val hasFab: Boolean) {
@@ -43,7 +48,7 @@ private enum class PkdTab(val route: String, val title: String, val icon: ImageV
 }
 
 private fun emptyStateFor(tab: PkdTab): String = when (tab) {
-    PkdTab.Notas -> "Nenhuma Nota ainda"
+    PkdTab.Notas -> ""
     PkdTab.Memorias -> "Nenhuma Memória ainda"
     PkdTab.Documentos -> "Nenhum Documento ainda"
     PkdTab.Busca -> "Digite para buscar"
@@ -51,12 +56,20 @@ private fun emptyStateFor(tab: PkdTab): String = when (tab) {
 
 @Composable
 fun PkdApp() {
+    if (!Session.loggedIn) {
+        LoginScreen()
+        return
+    }
+    LaunchedEffect(Unit) { Notes.refresh() } // right after login
+
     val navController = rememberNavController()
     val backStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0), // each screen's own Scaffold handles the system bars
         bottomBar = {
+            if (PkdTab.entries.none { it.route == currentRoute }) return@Scaffold // Detalhe: tela cheia
             NavigationBar {
                 PkdTab.entries.forEach { tab ->
                     NavigationBarItem(
@@ -80,8 +93,12 @@ fun PkdApp() {
             startDestination = PkdTab.Notas.route,
             modifier = Modifier.padding(scaffoldPadding),
         ) {
-            PkdTab.entries.forEach { tab ->
+            composable(PkdTab.Notas.route) { NotesScreen(onOpen = { navController.navigate("nota/$it") }) }
+            PkdTab.entries.filter { it != PkdTab.Notas }.forEach { tab ->
                 composable(tab.route) { PkdTabScreen(tab) }
+            }
+            composable("nota/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                NoteDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
             }
         }
     }
