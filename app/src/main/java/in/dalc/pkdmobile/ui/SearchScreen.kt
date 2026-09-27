@@ -9,10 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -67,7 +64,7 @@ fun SearchScreen(onOpen: (Notes.Hit) -> Unit) {
                 OutlinedTextField(
                     value = query, onValueChange = { query = it }, singleLine = true,
                     placeholder = { Text("Buscar Notas, Memórias e Documentos") },
-                    leadingIcon = { Icon(Icons.Filled.Search, null) },
+                    leadingIcon = { Boxicons.Icon("bx-search", null) },
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     modifier = Modifier.fillMaxWidth(),
                 )

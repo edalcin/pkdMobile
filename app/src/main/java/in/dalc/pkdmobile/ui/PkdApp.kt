@@ -1,12 +1,6 @@
 package `in`.dalc.pkdmobile.ui
 
 import androidx.compose.foundation.layout.padding
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.Folder
-import androidx.compose.material.icons.filled.History
-import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.Icon
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
@@ -14,7 +8,6 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -29,11 +22,11 @@ import androidx.compose.foundation.layout.WindowInsets
 
 /** Casca de navegação da v1 (direção A · Notas-first): login, depois barra inferior com 4 abas. */
 
-private enum class PkdTab(val route: String, val title: String, val icon: ImageVector) {
-    Notas("notas", "Notas", Icons.Filled.Description),
-    Memorias("memorias", "Memórias", Icons.Filled.History),
-    Documentos("documentos", "Documentos", Icons.Filled.Folder),
-    Busca("busca", "Busca", Icons.Filled.Search),
+private enum class PkdTab(val route: String, val title: String, val icon: String) {
+    Notas("notas", "Notas", "bx-note"),
+    Memorias("memorias", "Memórias", "bx-history"),
+    Documentos("documentos", "Documentos", "bx-folder"),
+    Busca("busca", "Busca", "bx-search"),
 }
 
 @Composable
@@ -63,7 +56,7 @@ fun PkdApp() {
                                 restoreState = true
                             }
                         },
-                        icon = { Icon(tab.icon, contentDescription = tab.title) },
+                        icon = { Boxicons.Icon(tab.icon, contentDescription = null) },
                         label = { Text(tab.title) },
                     )
                 }

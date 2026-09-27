@@ -14,16 +14,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
@@ -111,7 +107,7 @@ fun MemoriesScreen(onOpen: (Long) -> Unit) {
 
     Scaffold(
         topBar = { TopAppBar(title = { Text("Memórias") }) },
-        floatingActionButton = { FloatingActionButton(onClick = { newMemory = true }) { Icon(Icons.Filled.Add, "Nova Memória") } },
+        floatingActionButton = { FloatingActionButton(onClick = { newMemory = true }) { Boxicons.Icon("bx-plus", "Nova Memória") } },
     ) { padding ->
         PullToRefreshBox(
             isRefreshing = Notes.refreshing,
@@ -212,7 +208,7 @@ fun MemoryDetailScreen(id: Long, onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text(m.memoryId.ifEmpty { "Na fila" }, style = MaterialTheme.typography.titleSmall) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
+                navigationIcon = { IconButton(onClick = onBack) { Boxicons.Icon("bx-arrow-back", "Voltar") } },
             )
         },
     ) { padding ->

@@ -25,15 +25,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Description
-import androidx.compose.material.icons.filled.KeyboardArrowDown
-import androidx.compose.material.icons.filled.KeyboardArrowRight
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -77,7 +71,7 @@ import java.io.File
 @Composable
 private fun DocIcon(icon: String) {
     if (icon.isNotEmpty() && !icon.startsWith("bx")) Text(icon, Modifier.padding(end = 8.dp))
-    else Icon(Icons.Filled.Description, null, Modifier.padding(end = 8.dp).size(18.dp), tint = MaterialTheme.colorScheme.onSurfaceVariant)
+    else Boxicons.Icon(icon.ifEmpty { "bx-file" }, null, Modifier.padding(end = 8.dp), size = 18.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
 }
 
 /** Documentos (spec §3): the Árvore, collapsible. No FAB (read-only in v1). */
@@ -117,8 +111,8 @@ fun DocumentsScreen(onOpen: (Long) -> Unit) {
                         if (hasChildren) {
                             val open = d.id in expanded
                             IconButton(onClick = { expanded = if (open) expanded.filter { it != d.id }.toLongArray() else expanded + d.id }) {
-                                Icon(
-                                    if (open) Icons.Filled.KeyboardArrowDown else Icons.Filled.KeyboardArrowRight,
+                                Boxicons.Icon(
+                                    if (open) "bx-chevron-down" else "bx-chevron-right",
                                     if (open) "Fechar ${d.title}" else "Abrir ${d.title}",
                                 )
                             }
@@ -173,7 +167,7 @@ fun DocumentDetailScreen(id: Long, onBack: () -> Unit, onOpenDoc: (Long) -> Unit
         topBar = {
             TopAppBar(
                 title = { Text(doc?.optString("title") ?: node?.title ?: "Documento", maxLines = 1, overflow = TextOverflow.Ellipsis) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
+                navigationIcon = { IconButton(onClick = onBack) { Boxicons.Icon("bx-arrow-back", "Voltar") } },
             )
         },
     ) { padding ->

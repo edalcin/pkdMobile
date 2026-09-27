@@ -63,10 +63,17 @@ Atualizado em 2026-09-27.
   - Salvar põe um item `capture` na fila → `POST /api/capture` (`title`, `content`, `url`, `idempotency_key`); o PKD põe `#captura` e busca o Open Graph. 1ª linha = só o link → título vazio, o PKD usa o título da página (testado com github.com).
   - Offline: a Nota aparece com o link cru e "Na fila"; a fila envia depois (testado).
   - Sem servidor configurado: aviso "Entre no pkdMobile antes de compartilhar". Sessão expirada: a Nota fica na fila até o login.
+- **`v0.8.0`: slice 8 feito** (Boxicons). Testado no emulador:
+  - Fonte Boxicons 2.1.4 (a mesma da PWA, MIT) em `res/font/boxicons.ttf`; `assets/boxicons.txt` mapeia classe → código (gerado do `boxicons.css` do `../pkd/frontend/node_modules/boxicons`). Licença em `assets/boxicons-LICENSE.txt`.
+  - `ui/Boxicons.kt`: `Boxicons.Icon(nome, descrição)`; o glifo fica fora do leitor de tela (só a descrição).
+  - Todos os Material Icons trocados; dependência `material-icons-extended` removida (APK de release: 3,4 MB).
+  - Árvore: o ícone `bx-…` de cada Documento aparece; classe que não existe na 2.1.4 (ex.: `bx-sticky-note`) cai em `bx-file`.
 
 ## Próxima ação
 
-1. Slice 8: **Boxicons** (trocar os Material Icons; ícones `bx-…` da Árvore).
+Os 8 slices da v1 estão feitos. Falta da spec:
+1. **Configurações** (spec §3): biometria (liga/desliga, BiometricPrompt), logout, lista Não enviados. Hoje logout e Não enviados ficam na barra de Notas.
+2. **Detalhe da Nota ainda sem "Converter"/"Apagar"** — fora da v1 (spec §9), sem ação.
 2. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
@@ -78,7 +85,7 @@ Atualizado em 2026-09-27.
 5. ~~Documentos/Árvore~~ (feito na v0.5.0).
 6. ~~Busca~~ (feito na v0.6.0).
 7. ~~Share~~ (feito na v0.7.0). O bloqueio biométrico (spec §4) ainda não existe; o Share já fica fora dele.
-8. **Boxicons**: trocar os Material Icons.
+8. ~~Boxicons~~ (feito na v0.8.0).
 
 ## Como trabalhar (referência rápida)
 

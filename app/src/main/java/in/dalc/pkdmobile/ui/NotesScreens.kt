@@ -19,14 +19,6 @@ import androidx.compose.foundation.lazy.staggeredgrid.items
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.Logout
-import androidx.compose.material.icons.filled.Add
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Star
-import androidx.compose.material.icons.filled.StarBorder
-import androidx.compose.material.icons.filled.ErrorOutline
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
@@ -35,7 +27,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -96,17 +87,17 @@ fun NotesScreen(onOpen: (Long) -> Unit, onUnsent: () -> Unit) {
                 actions = {
                     if (failed.isNotEmpty()) {
                         IconButton(onClick = onUnsent) {
-                            BadgedBox(badge = { Badge { Text("${failed.size}") } }) { Icon(Icons.Filled.ErrorOutline, "Não enviados") }
+                            BadgedBox(badge = { Badge { Text("${failed.size}") } }) { Boxicons.Icon("bx-error-circle", "Não enviados") }
                         }
                     }
                     IconButton(onClick = {
                         scope.launch { logoutWarning = Notes.dao.outboxCount(); askLogout = true }
-                    }) { Icon(Icons.AutoMirrored.Filled.Logout, "Sair") }
+                    }) { Boxicons.Icon("bx-log-out", "Sair") }
                 },
             )
         },
         floatingActionButton = {
-            FloatingActionButton(onClick = { newNote = true }) { Icon(Icons.Filled.Add, "Nova Nota") }
+            FloatingActionButton(onClick = { newNote = true }) { Boxicons.Icon("bx-plus", "Nova Nota") }
         },
     ) { padding ->
         PullToRefreshBox(
@@ -182,7 +173,7 @@ fun UnsentScreen(onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text("Não enviados") },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
+                navigationIcon = { IconButton(onClick = onBack) { Boxicons.Icon("bx-arrow-back", "Voltar") } },
             )
         },
     ) { padding ->
@@ -222,7 +213,7 @@ private fun NoteCard(note: NoteEntity, tagMap: Map<String, TagEntity>, onClick: 
                     note.title, Modifier.weight(1f), style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.SemiBold, maxLines = 2, overflow = TextOverflow.Ellipsis,
                 )
-                if (note.isFavorite) Icon(Icons.Filled.Star, "Favorita", Modifier.size(16.dp), tint = MaterialTheme.colorScheme.primary)
+                if (note.isFavorite) Boxicons.Icon("bxs-star", "Favorita", size = 16.dp, tint = MaterialTheme.colorScheme.primary)
             }
             if (note.id < 0) Text("Na fila", style = MaterialTheme.typography.labelSmall, color = MaterialTheme.colorScheme.primary)
             if (excerpt.isNotEmpty()) {
@@ -254,7 +245,7 @@ private fun TagChips(names: List<String>, tagMap: Map<String, TagEntity>, onRemo
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Text("#$name", style = MaterialTheme.typography.labelSmall)
-                    if (onRemove != null) Icon(Icons.Filled.Close, "Tirar $name", Modifier.padding(start = 4.dp).size(14.dp))
+                    if (onRemove != null) Boxicons.Icon("bx-x", "Tirar $name", Modifier.padding(start = 4.dp), size = 14.dp)
                 }
             }
         }
@@ -300,11 +291,11 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
         topBar = {
             TopAppBar(
                 title = { Text(status ?: "Nota", style = MaterialTheme.typography.titleSmall) },
-                navigationIcon = { IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Voltar") } },
+                navigationIcon = { IconButton(onClick = onBack) { Boxicons.Icon("bx-arrow-back", "Voltar") } },
                 actions = {
                     IconButton(onClick = { save(JSONObject().put("favorite", !n.isFavorite)) }) {
-                        if (n.isFavorite) Icon(Icons.Filled.Star, "Tirar dos favoritos", tint = MaterialTheme.colorScheme.primary)
-                        else Icon(Icons.Filled.StarBorder, "Favoritar")
+                        if (n.isFavorite) Boxicons.Icon("bxs-star", "Tirar dos favoritos", tint = MaterialTheme.colorScheme.primary)
+                        else Boxicons.Icon("bx-star", "Favoritar")
                     }
                 },
             )
@@ -325,7 +316,7 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
                     val name = newTag.trim().removePrefix("#")
                     if (name.isNotEmpty() && name !in n.tagList()) save(JSONObject().put("tags", JSONArray(n.tagList() + name)))
                     newTag = ""
-                }) { Icon(Icons.Filled.Add, "Pôr Tag") }
+                }) { Boxicons.Icon("bx-plus", "Pôr Tag") }
             }
             OutlinedTextField(
                 value = text, onValueChange = { text = it },
