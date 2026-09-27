@@ -35,13 +35,17 @@ Decisões de charting (antes do mapa):
 - [O que funciona offline e como os conflitos são resolvidos?](tickets/04-offline.md): cache de Notas, Memórias, Árvore e Documentos abertos; fila de envio para Notas e Memórias; a última escrita vence; atualização em primeiro plano; busca offline no cache.
 - [Qual stack implementa a v1?](tickets/06-adr-stack.md): Kotlin + Compose, APK no GitHub Releases (Obtainium), minSdk 31, tokens do PKD; [ADR 0001](../adr/0001-stack-kotlin-compose.md).
 - [A PWA também passa a criar Nota no share?](tickets/05-share-pwa.md): sim — PWA e app criam Nota `#captura` por `/api/capture` (com `idempotency_key` e Open Graph); os Documentos `#captura` antigos ficam.
+- [Qual é a spec da v1?](tickets/07-spec-v1.md): [spec](../spec-v1.md) montada; Arquivos só ver/baixar, sem notificações, Nota com Tags e favorita. **Destino alcançado.**
 
 ## Not yet specified
 
-(vazio — o que restava virou o ticket [Qual é a spec da v1?](tickets/07-spec-v1.md))
+(vazio — o mapa chegou ao destino)
 
 ## Out of scope
 
 - Edição rica de Documentos (TipTap): fica para depois da v1 (decisão de escopo no charting).
 - Graph View, Chat com documentos e Administração (backup, restauração): fora do escopo da v1.
 - Múltiplas instâncias PKD (mais de um servidor ou conta): a v1 usa um servidor e uma sessão ([Como o app autentica no PKD?](tickets/03-autenticacao.md)).
+- Upload de arquivos e câmera: v1 só vê e baixa Arquivos ([Qual é a spec da v1?](tickets/07-spec-v1.md)).
+- Notificações: sem valor claro para a v1 ([Qual é a spec da v1?](tickets/07-spec-v1.md)).
+- Converter e apagar Nota: continuam na PWA ([Qual é a spec da v1?](tickets/07-spec-v1.md)).

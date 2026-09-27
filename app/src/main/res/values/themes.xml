@@ -1,0 +1,7 @@
+<resources>
+    <!-- Tema só para a janela inicial; o Material 3 real vem do PkdMobileTheme (Compose). -->
+    <style name="Theme.PkdMobile" parent="android:Theme.DeviceDefault.DayNight">
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:windowActionBar">false</item>
+    </style>
+</resources>
