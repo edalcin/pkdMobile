@@ -2,7 +2,17 @@
 
 Interface de celular Android para o PKD.
 
-App nativo em Kotlin + Jetpack Compose (Material 3), único usuário, distribuído como APK assinado no GitHub Releases (sem Google Play). Ver [`docs/adr/0001-stack-kotlin-compose.md`](docs/adr/0001-stack-kotlin-compose.md) e [`docs/spec-v1.md`](docs/spec-v1.md).
+App nativo em Kotlin + Jetpack Compose (Material 3), único usuário, distribuído como APK assinado no GitHub Releases (sem Google Play). Ver [`docs/adr/0001-stack-kotlin-compose.md`](docs/adr/0001-stack-kotlin-compose.md) e [`docs/spec-v1.md`](docs/spec-v1.md). Estado atual e próximos passos: [`docs/proximosPassos.md`](docs/proximosPassos.md).
+
+## O que o app faz (v1)
+
+- **Notas:** feed em 2 colunas (favoritas primeiro), criar (FAB), editar texto com salvamento automático (1ª linha = título), Tags, favoritar.
+- **Memórias:** lista por mês, "Nova Memória" (data, título, detalhes), detalhe com `MEM-…`.
+- **Documentos:** Árvore colapsável e detalhe só leitura (corpo, Subdocumentos, Notas relacionadas, Arquivos para ver/baixar, Links externos).
+- **Busca:** a busca híbrida do PKD; sem conexão, busca local com "resultados parciais".
+- **Share:** "Compartilhar → Nota no PKD" em outros apps cria uma Nota `#captura`.
+- **Offline:** cache local (Room) de Notas, Memórias, Árvore e dos 50 últimos Documentos abertos; toda mudança passa por uma **fila de envio**, e o que o PKD recusa vai para **Não enviados** (ícone na barra de Notas).
+- Ícones Boxicons (os mesmos da PWA); tema claro/escuro segue o sistema. Sem biometria.
 
 > UNRAID e Docker não se aplicam a este projeto: é um APK Android, não um serviço web em container (ver seção "Consequences" da ADR 0001).
 
@@ -60,3 +70,10 @@ Dependabot ativo para `gradle` e `github-actions` ([`.github/dependabot.yml`](.g
 
 1. Baixe o APK mais recente em [Releases](../../releases).
 2. Instale via [Obtainium](https://github.com/ImranR98/Obtainium), apontando para este repositório — ele acompanha os Releases do GitHub e avisa quando sai uma versão nova.
+
+## Primeiro login
+
+- **URL do PKD:** só `https://` (o build de debug aceita também `http://`, para testar com um PKD local).
+- **Cloudflare Access (opcional):** se o PKD fica atrás do Access, crie um Service Token (Zero Trust → Access → Service credentials) e ponha na aplicação do PKD uma policy com a action **Service Auth** que inclua esse token. No app, preencha `CF-Access-Client-Id` (termina em `.access`) e `CF-Access-Client-Secret`. Ficam cifrados no aparelho.
+- **Senha** do PKD; num aparelho novo, o código de 2FA que chega por e-mail.
+- A sessão dura 30 dias sem uso; depois o app pede só a senha. **Sair** (ícone na barra de Notas) apaga o cache, a fila e os cookies deste aparelho.
