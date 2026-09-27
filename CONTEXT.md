@@ -1,6 +1,6 @@
 # Contexto do Projeto: Interface Android para o PKD
 
-**Descrição:** Desenvolvimento de um aplicativo para Android que oferece acesso, edição e organização da base de conhecimento pessoal PKD, priorizando desempenho offline, integração com o sistema e uma experiência mobile-first. A stack tecnológica ainda não está decidida: ela será escolhida depois da escolha da direção visual (mockup).
+**Descrição:** Desenvolvimento de um aplicativo para Android que oferece acesso, edição e organização da base de conhecimento pessoal PKD, priorizando desempenho offline, integração com o sistema e uma experiência mobile-first. Stack: Kotlin + Jetpack Compose (ver `docs/adr/0001-stack-kotlin-compose.md`).
 
 
 
@@ -31,7 +31,9 @@ O PKD (Personal Knowledge Database) - @pkd/ - é uma aplicação auto-hospedada 
 | **Associações**      | Área no rodapé do documento com três colunas: Notas relacionadas, Arquivos e Links externos. |
 | **Tags**             | Marcadores com cores configuráveis. Chips coloridos na sidebar e no editor. |
 | **Graph View**       | Visualização em grafo (D3.js) de documentos, tags e hierarquia. Modo semântico exibe similaridade por embeddings. |
-| **PWA Share Target** | Recurso atual que permite enviar links de outros apps para o PKD. No Android nativo, isso pode ser substituído por um `Intent` de compartilhamento. |
+| **PWA Share Target** | Envio de conteúdo de outros apps para o PKD. Na PWA e no app Android, cria uma Nota com a tag `#captura`. |
+| **Fila de envio**    | No app Android: Notas e Memórias criadas ou editadas sem conexão, esperando para ir ao PKD. |
+| **Não enviados**     | No app Android: itens que o PKD rejeitou ao receber a fila de envio. O usuário copia, recria ou descarta cada um. |
 
 ## 3. Links Úteis
 

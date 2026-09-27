@@ -31,15 +31,17 @@ Decisões de charting (antes do mapa):
 
 - [Como as stacks candidatas atendem os requisitos da v1?](tickets/02-stacks-candidatas.md): Compose tem tudo first-party, mas custo alto; Capacitor e TWA reaproveitam o Svelte; Capacitor tem risco de origem/CORS; TWA tem o menor custo, mas offline fraco.
 - [Qual direção visual o app segue?](tickets/01-direcao-visual.md): A · Notas-first — feed de Notas com FAB e barra inferior (Notas · Memórias · Documentos · Busca); [prototype](prototypes/01-direcao-visual.prototype.html).
+- [Como o app autentica no PKD?](tickets/03-autenticacao.md): login por sessão (senha + 2FA, cookies cifrados, sem guardar senha), só HTTPS, um servidor, biometria opcional, botão "Encerrar as outras sessões" no PKD.
+- [O que funciona offline e como os conflitos são resolvidos?](tickets/04-offline.md): cache de Notas, Memórias, Árvore e Documentos abertos; fila de envio para Notas e Memórias; a última escrita vence; atualização em primeiro plano; busca offline no cache.
+- [Qual stack implementa a v1?](tickets/06-adr-stack.md): Kotlin + Compose, APK no GitHub Releases (Obtainium), minSdk 31, tokens do PKD; [ADR 0001](../adr/0001-stack-kotlin-compose.md).
+- [A PWA também passa a criar Nota no share?](tickets/05-share-pwa.md): sim — PWA e app criam Nota `#captura` por `/api/capture` (com `idempotency_key` e Open Graph); os Documentos `#captura` antigos ficam.
 
 ## Not yet specified
 
-- **Anexos e câmera:** upload/download de arquivos e foto direto para uma Nota. A direção A não mostra anexos; o ponto de entrada natural é a bottom sheet "Nova Nota". Depende da stack.
-- **Notificações:** lembretes de Memórias ou de atividades. Opcional; o valor ainda não está claro.
-- **Múltiplas instâncias PKD:** o app aceita mais de um servidor ou conta?
-- **Montagem da spec da v1:** juntar as decisões em um documento de spec. Fica claro quando os tickets acima fecharem.
+(vazio — o que restava virou o ticket [Qual é a spec da v1?](tickets/07-spec-v1.md))
 
 ## Out of scope
 
 - Edição rica de Documentos (TipTap): fica para depois da v1 (decisão de escopo no charting).
 - Graph View, Chat com documentos e Administração (backup, restauração): fora do escopo da v1.
+- Múltiplas instâncias PKD (mais de um servidor ou conta): a v1 usa um servidor e uma sessão ([Como o app autentica no PKD?](tickets/03-autenticacao.md)).
