@@ -155,6 +155,9 @@ interface NoteDao {
     @Query("DELETE FROM outbox") suspend fun clearOutbox()
 
     @Query("SELECT * FROM docs ORDER BY pos") fun docs(): Flow<List<DocEntity>>
+    @Query("SELECT * FROM notes") suspend fun notesOnce(): List<NoteEntity>
+    @Query("SELECT * FROM memories") suspend fun memoriesOnce(): List<MemoryEntity>
+    @Query("SELECT * FROM docs") suspend fun docsOnce(): List<DocEntity>
     @Insert suspend fun insertDocs(docs: List<DocEntity>)
     @Query("DELETE FROM docs") suspend fun clearDocs()
     @Query("SELECT * FROM doc_bodies WHERE id = :id") fun docBody(id: Long): Flow<DocBodyEntity?>
@@ -412,6 +415,41 @@ object Notes {
         dao.upsertDocBody(DocBodyEntity(id, json.toString(), System.currentTimeMillis()))
         dao.trimDocBodies()
     }
+
+    enum class Kind { Nota, Memoria, Documento }
+
+    data class Hit(val id: Long, val title: String, val kind: Kind)
+
+    /**
+     * Busca (spec §3/§5): the PKD hybrid search (`GET /api/tree?q=`, Notas and Memórias flagged). Without a
+     * connection, a local search over the cache (titles; bodies of Notas and Memórias) — partial = true.
+     */
+    suspend fun search(q: String): Pair<List<Hit>, Boolean> = try {
+        val list = JSONArray(Api.request("GET", "/api/tree?q=" + java.net.URLEncoder.encode(q, "UTF-8"))).objects().map {
+            val kind = when {
+                it.optBoolean("is_note") -> Kind.Nota
+                it.optBoolean("is_memory") -> Kind.Memoria
+                else -> Kind.Documento
+            }
+            Hit(it.getLong("id"), it.optString("title"), kind)
+        }
+        list to false
+    } catch (e: ApiException) {
+        throw e
+    } catch (e: IOException) {
+        localSearch(q) to true
+    }
+
+    private suspend fun localSearch(q: String): List<Hit> {
+        val needle = fold(q)
+        fun match(vararg s: String) = s.any { fold(it).contains(needle) }
+        return dao.notesOnce().filter { match(it.title, htmlToText(it.bodyHtml)) }.map { Hit(it.id, it.title, Kind.Nota) } +
+            dao.memoriesOnce().filter { match(it.title, htmlToText(it.bodyHtml)) }.map { Hit(it.id, it.title, Kind.Memoria) } +
+            dao.docsOnce().filter { match(it.title) }.map { Hit(it.id, it.title, Kind.Documento) }
+    }
+
+    /** Lowercase without accents, so "memoria" finds "Memória". */
+    private fun fold(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "").lowercase()
 
     suspend fun logout() {
         runCatching { Api.request("POST", "/api/logout") }

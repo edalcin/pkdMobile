@@ -1,26 +1,18 @@
 package `in`.dalc.pkdmobile.ui
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Description
 import androidx.compose.material.icons.filled.Folder
 import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
-import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -35,10 +27,7 @@ import `in`.dalc.pkdmobile.data.Notes
 import `in`.dalc.pkdmobile.data.Session
 import androidx.compose.foundation.layout.WindowInsets
 
-/**
- * Casca de navegação da v1 (direção A · Notas-first): login, depois barra inferior com 4 abas.
- * Notas já usam o cache Room; as outras abas ainda mostram um estado vazio (ver docs/proximosPassos.md).
- */
+/** Casca de navegação da v1 (direção A · Notas-first): login, depois barra inferior com 4 abas. */
 
 private enum class PkdTab(val route: String, val title: String, val icon: ImageVector) {
     Notas("notas", "Notas", Icons.Filled.Description),
@@ -46,9 +35,6 @@ private enum class PkdTab(val route: String, val title: String, val icon: ImageV
     Documentos("documentos", "Documentos", Icons.Filled.Folder),
     Busca("busca", "Busca", Icons.Filled.Search),
 }
-
-/** Tab not built yet (slice 6). */
-private fun emptyStateFor(tab: PkdTab): String = if (tab == PkdTab.Busca) "Digite para buscar" else ""
 
 @Composable
 fun PkdApp() {
@@ -95,7 +81,17 @@ fun PkdApp() {
             composable("naoenviados") { UnsentScreen(onBack = { navController.popBackStack() }) }
             composable(PkdTab.Memorias.route) { MemoriesScreen(onOpen = { navController.navigate("memoria/$it") }) }
             composable(PkdTab.Documentos.route) { DocumentsScreen(onOpen = { navController.navigate("documento/$it") }) }
-            composable(PkdTab.Busca.route) { PkdTabScreen(PkdTab.Busca) }
+            composable(PkdTab.Busca.route) {
+                SearchScreen(onOpen = { hit ->
+                    navController.navigate(
+                        when (hit.kind) {
+                            Notes.Kind.Nota -> "nota/${hit.id}"
+                            Notes.Kind.Memoria -> "memoria/${hit.id}"
+                            Notes.Kind.Documento -> "documento/${hit.id}"
+                        },
+                    )
+                })
+            }
             composable("documento/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 DocumentDetailScreen(
                     it.arguments!!.getLong("id"),
@@ -110,21 +106,6 @@ fun PkdApp() {
             composable("memoria/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 MemoryDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
             }
-        }
-    }
-}
-
-@OptIn(ExperimentalMaterial3Api::class)
-@Composable
-private fun PkdTabScreen(tab: PkdTab) {
-    Scaffold(
-        topBar = { TopAppBar(title = { Text(tab.title) }) },
-    ) { padding ->
-        Box(
-            modifier = Modifier.fillMaxSize().padding(padding),
-            contentAlignment = Alignment.Center,
-        ) {
-            Text(text = emptyStateFor(tab), color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
     }
 }

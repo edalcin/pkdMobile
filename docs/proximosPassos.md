@@ -54,10 +54,14 @@ Atualizado em 2026-09-27.
   - Cache LRU dos 50 Documentos abertos (tabela `doc_bodies`); offline mostra a cópia com o aviso.
   - Documento protegido (`encrypted_locked`): mostra "Desbloqueie na PWA" (desbloqueio no app fora da v1).
   - Room versão 4, migração 3→4 testada (atualização de um aparelho com a v0.4.0).
+- **`v0.6.0`: slice 6 feito** (Busca). Testado no emulador contra um PKD local:
+  - Aba Busca: campo com espera de 400 ms, mínimo 2 letras; resultados agrupados em Notas, Memórias e Documentos; toque abre o detalhe.
+  - Online: busca híbrida do PKD (`GET /api/tree?q=`, que marca `is_note`/`is_memory`).
+  - Offline (erro de rede): busca local no cache (títulos; corpo das Notas e Memórias), sem acento e sem maiúsculas, com o aviso "resultados parciais".
 
 ## Próxima ação
 
-1. Slice 6: **Busca** (servidor `/api/tree?q=` + busca local offline com "resultados parciais").
+1. Slice 7: **Share** (`ACTION_SEND` → Nota `#captura` pela fila de envio para `/api/capture`).
 2. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
@@ -67,7 +71,7 @@ Atualizado em 2026-09-27.
 3. ~~Fila de envio~~ (feita na v0.3.0, sem WorkManager). Inclui criar Nota (FAB) e a edição offline.
 4. ~~Memórias~~ (feito na v0.4.0).
 5. ~~Documentos/Árvore~~ (feito na v0.5.0).
-6. **Busca**: servidor (`/api/tree?q=`); offline, busca local com "resultados parciais".
+6. ~~Busca~~ (feito na v0.6.0).
 7. **Share** (`ACTION_SEND`): pela fila de envio para `/api/capture`, fora do bloqueio biométrico.
 8. **Boxicons**: trocar os Material Icons.
 
