@@ -58,10 +58,15 @@ Atualizado em 2026-09-27.
   - Aba Busca: campo com espera de 400 ms, mínimo 2 letras; resultados agrupados em Notas, Memórias e Documentos; toque abre o detalhe.
   - Online: busca híbrida do PKD (`GET /api/tree?q=`, que marca `is_note`/`is_memory`).
   - Offline (erro de rede): busca local no cache (títulos; corpo das Notas e Memórias), sem acento e sem maiúsculas, com o aviso "resultados parciais".
+- **`v0.7.0`: slice 7 feito** (Share). Testado no emulador contra um PKD local:
+  - `ShareActivity` (tema translúcido) recebe `ACTION_SEND` `text/plain`: bottom sheet "Nova Nota #captura" sobre o app de origem; o assunto (`EXTRA_SUBJECT`) vira a 1ª linha.
+  - Salvar põe um item `capture` na fila → `POST /api/capture` (`title`, `content`, `url`, `idempotency_key`); o PKD põe `#captura` e busca o Open Graph. 1ª linha = só o link → título vazio, o PKD usa o título da página (testado com github.com).
+  - Offline: a Nota aparece com o link cru e "Na fila"; a fila envia depois (testado).
+  - Sem servidor configurado: aviso "Entre no pkdMobile antes de compartilhar". Sessão expirada: a Nota fica na fila até o login.
 
 ## Próxima ação
 
-1. Slice 7: **Share** (`ACTION_SEND` → Nota `#captura` pela fila de envio para `/api/capture`).
+1. Slice 8: **Boxicons** (trocar os Material Icons; ícones `bx-…` da Árvore).
 2. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
@@ -72,7 +77,7 @@ Atualizado em 2026-09-27.
 4. ~~Memórias~~ (feito na v0.4.0).
 5. ~~Documentos/Árvore~~ (feito na v0.5.0).
 6. ~~Busca~~ (feito na v0.6.0).
-7. **Share** (`ACTION_SEND`): pela fila de envio para `/api/capture`, fora do bloqueio biométrico.
+7. ~~Share~~ (feito na v0.7.0). O bloqueio biométrico (spec §4) ainda não existe; o Share já fica fora dele.
 8. **Boxicons**: trocar os Material Icons.
 
 ## Como trabalhar (referência rápida)

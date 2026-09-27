@@ -3,6 +3,7 @@ package `in`.dalc.pkdmobile.data
 import android.content.Context
 import android.text.Html
 import android.text.TextUtils
+import android.util.Patterns
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
@@ -295,6 +296,26 @@ object Notes {
         }
     }
 
+    /**
+     * Share (spec §6): Nota #captura. Goes to POST /api/capture, which fetches the Open Graph title of
+     * the link; offline, the Nota shows the raw link until the queue sends it.
+     */
+    suspend fun capture(text: String) {
+        val url = Patterns.WEB_URL.matcher(text).let { if (it.find()) it.group() else "" }
+        val lines = text.trim().lines()
+        // A 1st line that is only the link: let the PKD use the page title.
+        val title = lines.first().trim().takeIf { it != url }.orEmpty()
+        val rest = lines.drop(1).joinToString("\n").trim()
+        val content = if (rest.isEmpty()) "" else textToHtml(rest)
+        val tempId = minOf(dao.minId() ?: 0, 0) - 1
+        val now = Instant.now().toString()
+        dao.upsert(NoteEntity(tempId, title.ifEmpty { url.ifEmpty { "Captura" } }, content, "captura", false, now, now))
+        val body = JSONObject().put("title", title).put("content", content).put("url", url)
+            .put("idempotency_key", UUID.randomUUID().toString())
+        queueLock.withLock { dao.insertOutbox(OutboxEntity(noteId = tempId, kind = "capture", body = body.toString())) }
+        flush()
+    }
+
     /** New Nota from plain text; returns false when the 1st line (title) is empty. */
     suspend fun create(text: String): Boolean {
         val fields = textToFields(text) ?: return false
@@ -324,7 +345,7 @@ object Notes {
     suspend fun edit(id: Long, fields: JSONObject) {
         dao.note(id)?.let { dao.upsert(it.with(fields)) }
         queueLock.withLock {
-            val create = if (id < 0) dao.lastPending(id, "create") else null
+            val create = if (id < 0) dao.lastPending(id, "create") ?: dao.lastPending(id, "capture") else null
             if (create != null) {
                 dao.updateOutbox(create.copy(body = JSONObject(create.body).mergedWith(fields).toString()))
             } else {
@@ -354,7 +375,7 @@ object Notes {
             } catch (e: ApiException) {
                 if (e.code !in 400..499 || e.code == 401 || e.code == 429) return@withLock false
                 dao.updateOutbox(item.copy(failed = true, error = e.userMessage()))
-                if (item.kind == "create") dao.deleteNote(item.noteId)
+                if (item.kind == "create" || item.kind == "capture") dao.deleteNote(item.noteId)
                 if (item.kind == "memory") dao.deleteMemory(item.noteId)
             } catch (e: IOException) {
                 return@withLock false
@@ -368,6 +389,11 @@ object Notes {
         when (item.kind) {
             "create" -> {
                 val note = noteFromJson(JSONObject(Api.request("POST", "/api/notes", body)))
+                dao.deleteNote(item.noteId)
+                dao.upsert(note)
+            }
+            "capture" -> {
+                val note = noteFromJson(JSONObject(Api.request("POST", "/api/capture", body)))
                 dao.deleteNote(item.noteId)
                 dao.upsert(note)
             }
