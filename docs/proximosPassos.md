@@ -76,7 +76,7 @@ Atualizado em 2026-09-27.
 Pendências:
 1. Usar no celular e anotar ajustes.
 2. Candidatos da v1.1 (spec §9): upload de arquivos e câmera; notificação "Neste dia".
-3. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
+3. ~~Container `notas` no EC2~~: feito em 2026-09-27. Backup em `~/docker-compose_comNotas.yml`; o serviço `notas` saiu do `docker-compose.yml` e o container parado foi removido (`docker rm notas`). Os dados (`~/notas/db`, `~/notas/files`) ficaram no disco; o `atualizar.sh` ainda inclui `notas/db` no backup dos bancos.
 
 ## Slices (em ordem)
 
