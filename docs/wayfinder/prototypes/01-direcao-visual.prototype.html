@@ -1,0 +1,376 @@
+<!doctype html>
+<!--
+  PROTOTYPE (throwaway) — ticket "Qual direção visual o app segue?"
+  Três direções (A · Notas-first, B · Espelho da PWA, C · Busca-first) na mesma página,
+  trocadas por ?variant=A|B|C e pela barra flutuante (← →). Tema: ?theme=light|dark.
+  Dados em memória; nada é salvo. Abrir com duplo clique.
+-->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PROTOTYPE · pkdMobile · direção visual</title>
+<link rel="stylesheet" href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css">
+<style>
+/* tokens copiados de ../pkd/frontend/src/styles/app.css */
+:root,[data-theme=light]{--bg:#f8f8f8;--bg-panel:#fff;--bg-hover:#f0f0f0;--bg-active:#e8e4fd;--border:#e0e0e0;--text:#1a1a1a;--text-muted:#6b7280;--text-active:#4f46e5;--accent:#4f46e5;--shadow-lg:0 4px 16px rgba(0,0,0,.12);--radius:6px;--radius-lg:10px;color-scheme:light}
+[data-theme=dark]{--bg:#111;--bg-panel:#1c1c1e;--bg-hover:#2c2c2e;--bg-active:#2d2b5e;--border:#3a3a3c;--text:#f2f2f7;--text-muted:#8e8e93;--text-active:#818cf8;--accent:#818cf8;--shadow-lg:0 4px 16px rgba(0,0,0,.4);color-scheme:dark}
+*{box-sizing:border-box}
+body{margin:0;min-height:100vh;display:flex;justify-content:center;align-items:flex-start;gap:40px;padding:24px 24px 96px;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,-apple-system,'Segoe UI',Roboto,sans-serif}
+button{font:inherit;color:inherit;background:none;border:none;cursor:pointer;padding:0}
+input,textarea{font:inherit;color:var(--text);background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius)}
+input:focus,textarea:focus{outline:2px solid var(--accent);border-color:transparent}
+.phone{flex:none;width:380px;height:min(800px,calc(100vh - 110px));min-height:560px;border:10px solid #0b0b0c;border-radius:44px;background:var(--bg);overflow:hidden;display:flex;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,.25)}
+.status{flex:none;height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 22px;font-size:12px;font-weight:600;background:var(--bg-panel)}
+.gesture{flex:none;height:18px;display:grid;place-items:center;background:var(--bg-panel)}
+.gesture::after{content:'';width:110px;height:4px;border-radius:2px;background:var(--text-muted);opacity:.5}
+#screen{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.app{flex:1;min-height:0;display:flex;flex-direction:column;position:relative}
+.scroll{flex:1;min-height:0;overflow-y:auto}
+
+.bar{flex:none;display:flex;align-items:center;gap:2px;height:56px;padding:0 6px;background:var(--bg-panel);border-bottom:1px solid var(--border)}
+.bar h1{flex:1;min-width:0;margin:0 8px;font-size:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.logo{font-weight:800;color:var(--accent);padding-left:10px;font-size:18px}
+.ib{width:40px;height:40px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:22px}
+.ib:hover{background:var(--bg-hover)}
+.ib.sm{width:30px;height:30px;font-size:18px;margin-left:auto}
+
+.nav{flex:none;display:flex;background:var(--bg-panel);border-top:1px solid var(--border)}
+.nav button{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 0 6px;font-size:11px;color:var(--text-muted)}
+.nav i{font-size:22px;padding:2px 16px;border-radius:14px}
+.nav .on{color:var(--text-active);font-weight:600}.nav .on i{background:var(--bg-active)}
+.fab{position:absolute;right:16px;bottom:78px;width:56px;height:56px;border-radius:16px;background:var(--accent);color:#fff;font-size:28px;display:grid;place-items:center;box-shadow:var(--shadow-lg)}
+
+.grid{columns:2;column-gap:8px;padding:8px}
+.card{break-inside:avoid;margin-bottom:8px;padding:12px;background:var(--bg-panel);border:1px solid var(--border);border-radius:var(--radius-lg);font-size:14px;cursor:pointer}
+.card b{display:block;margin-bottom:2px}
+.card p{margin:0;color:var(--text-muted);white-space:pre-line;display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden}
+.chip{display:inline-block;font-size:11px;line-height:18px;padding:0 8px;border-radius:9px;margin:6px 4px 0 0;color:#fff}
+.meta{font-size:12px;color:var(--text-muted)}
+
+.row{display:flex;align-items:center;gap:12px;padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--border);background:var(--bg-panel)}
+.row:hover{background:var(--bg-hover)}
+.row .t{flex:1;min-width:0}
+.row .t b{display:block;font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row .t small{display:block;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ico{width:40px;flex:none;text-align:center;font-size:22px;color:var(--text-muted)}
+.day{width:40px;flex:none;text-align:center}.day b{display:block;font-size:20px;line-height:1.1}.day small{font-size:11px;color:var(--text-muted)}
+.month{padding:14px 16px 4px;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted)}
+.empty{padding:24px;text-align:center;color:var(--text-muted)}
+
+.tree{padding:4px 0}
+.node{display:flex;align-items:center;min-height:38px;padding-right:12px;font-size:14px}
+.node:hover{background:var(--bg-hover)}
+.tw{width:28px;height:28px;flex:none;display:grid;place-items:center;font-size:18px;color:var(--text-muted)}
+.nt{flex:1;cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dd{display:inline-block;width:24px;color:var(--text-muted);font-weight:600}
+
+.detail{padding:16px}
+.note-edit{width:100%;min-height:380px;padding:0;border:none;background:transparent;font-size:16px;line-height:1.6;resize:none;outline:none!important}
+.bigdate{font-size:13px;color:var(--accent);font-weight:600;text-transform:capitalize}
+.detail h1{font-size:22px;margin:4px 0}.detail h2{font-size:20px;margin:6px 0}.detail h3{font-size:15px;margin:18px 0 6px}
+.detail h4{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--text-muted);margin:14px 0 4px}
+.detail table{border-collapse:collapse;width:100%;font-size:13px}.detail td,.detail th{border:1px solid var(--border);padding:4px 6px;text-align:left}
+.assoc{margin-top:20px;padding-top:4px;border-top:1px solid var(--border)}
+.assoc .row{padding:8px 0;background:none}
+.lite{display:flex;align-items:center;gap:8px;padding:6px 0;font-size:14px}.lite i{font-size:18px;color:var(--text-muted)}
+
+.scrim{position:absolute;inset:0;z-index:10;display:flex;align-items:flex-end;background:rgba(0,0,0,.4)}
+.sheet{width:100%;background:var(--bg-panel);border-radius:20px 20px 0 0;padding:8px 16px 16px;box-shadow:var(--shadow-lg)}
+.grip{width:36px;height:4px;border-radius:2px;background:var(--border);margin:4px auto 10px}
+.sheet h3{margin:0 0 8px;font-size:17px}
+.sheet textarea,.sheet input{display:block;width:100%;padding:10px;margin-bottom:8px}
+.sheet textarea{min-height:140px;resize:none}
+.from{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--text-muted);margin-bottom:6px}
+.btns{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+.btn{padding:8px 18px;border-radius:20px;font-weight:600;color:var(--accent)}.btn.p{background:var(--accent);color:#fff}
+.toast{position:absolute;left:50%;bottom:92px;transform:translateX(-50%);z-index:20;background:#323232;color:#fff;padding:10px 16px;border-radius:8px;font-size:13px;white-space:nowrap}
+
+.drawer{position:absolute;inset:0;z-index:9;display:flex}
+.drawer .rest{flex:1;background:rgba(0,0,0,.4)}
+.drawer .panel{width:86%;background:var(--bg-panel);overflow-y:auto;box-shadow:var(--shadow-lg)}
+.side{background:var(--bg-panel)}
+.sidesearch{padding:10px 12px}
+.sidesearch input{width:100%;height:38px;padding:0 12px}
+.sec{border-top:1px solid var(--border)}
+.sech{display:flex;align-items:center;gap:6px;padding:8px 12px;cursor:pointer;font-size:14px}
+.sech i{font-size:18px;color:var(--text-muted)}
+
+.chead{flex:none;display:flex;align-items:center;gap:4px;padding:12px 8px 8px 12px;background:var(--bg)}
+.omni{flex:1;display:flex;align-items:center;gap:8px;height:52px;padding:0 6px 0 16px;border-radius:26px;background:var(--bg-panel);border:1px solid var(--border)}
+.omni.sm{margin:10px 12px;height:44px}
+.omni i.bx-search{font-size:20px;color:var(--text-muted)}
+.omni input{flex:1;min-width:0;height:100%;border:none;background:transparent;font-size:16px;outline:none!important}
+.chips{display:flex;gap:8px;padding:4px 12px 10px;overflow-x:auto}
+.fchip{padding:6px 14px;border-radius:16px;border:1px solid var(--border);font-size:13px;white-space:nowrap;background:var(--bg-panel)}
+.fchip.on{background:var(--bg-active);color:var(--text-active);border-color:transparent;font-weight:600}
+.acts{padding:4px 12px 8px;display:flex;flex-direction:column;gap:8px}
+.act{display:flex;align-items:center;gap:12px;padding:10px 14px;border-radius:var(--radius-lg);border:1px solid var(--border);background:var(--bg-panel);cursor:pointer}
+.act i{font-size:22px}.act .t{min-width:0}.act small{display:block;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.act.p{background:var(--accent);color:#fff;border-color:transparent}.act.p small{color:rgba(255,255,255,.8)}
+
+.info{width:340px;font-size:14px}
+.info h2{margin:8px 0 4px;font-size:20px}.info ol{padding-left:20px}.info li{margin:4px 0}
+.tag{display:inline-block;padding:2px 8px;border-radius:6px;background:#fde68a;color:#78350f;font-size:11px;font-weight:700;letter-spacing:.05em}
+
+#sw{position:fixed;left:50%;bottom:16px;transform:translateX(-50%);z-index:100;display:flex;align-items:center;gap:2px;padding:6px;border-radius:999px;background:#111;color:#fff;box-shadow:0 8px 24px rgba(0,0,0,.35);font:13px system-ui}
+#sw button{color:#fff;padding:6px 12px;border-radius:999px;display:flex;align-items:center;gap:4px}
+#sw button:hover{background:#333}
+#sw .lbl{min-width:180px;justify-content:center;font-weight:600}
+#sw .sep{width:1px;height:20px;background:#444;margin:0 4px}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="status"><span>9:41</span><span><i class='bx bx-wifi'></i> <i class='bx bx-signal-5'></i> <i class='bx bxs-battery'></i></span></div>
+  <div id="screen"></div>
+  <div class="gesture"></div>
+</div>
+<aside class="info" id="info"></aside>
+<div id="sw">
+  <button data-act="prev" title="Anterior (←)"><i class='bx bx-chevron-left'></i></button>
+  <button class="lbl" id="swl" data-act="next"></button>
+  <button data-act="next" title="Próxima (→)"><i class='bx bx-chevron-right'></i></button>
+  <span class="sep"></span>
+  <button data-act="theme" title="Claro/escuro"><i class='bx bx-adjust'></i> Tema</button>
+  <button data-act="share" title="Simular share intent"><i class='bx bx-share-alt'></i> Share</button>
+</div>
+<script>
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const norm = s => s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+const TODAY = '2026-09-27';
+const dt = s => new Date(s.length === 10 ? s + 'T12:00' : s);
+const short = s => dt(s).toLocaleDateString('pt-BR', {day:'numeric', month:'short'});
+const MONTHS = ['Janeiro','Fevereiro','Março','Abril','Maio','Junho','Julho','Agosto','Setembro','Outubro','Novembro','Dezembro'];
+const TAGS = {trabalho:'#3b82f6', pessoal:'#16a34a', casa:'#d97706', leitura:'#9333ea', captura:'#6b7280'};
+
+let nextNote = 7, nextMem = 143;
+const notes = [
+  {id:2, body:'Compras\n- café\n- pão de forma\n- azeite\n- filtro de papel', tags:['casa'], upd:'2026-09-27T08:05'},
+  {id:1, body:'Dentista — Dra. Paula\nRua Voluntários da Pátria, 190, sala 402\nBotafogo · (21) 2266-0000', tags:['pessoal'], upd:'2026-09-26T18:10'},
+  {id:3, body:'Marina Souza (herbário RB)\nmarina@exemplo.org\nFalar sobre a planilha Darwin Core', tags:['trabalho'], upd:'2026-09-25T14:30'},
+  {id:4, body:'Livros para ler\n"A Invenção da Natureza" (Wulf)\n"Braiding Sweetgrass" (Kimmerer)', tags:['leitura'], upd:'2026-09-20T21:00'},
+  {id:5, body:'GBIF — DwC-DP\nhttps://www.gbif.org/news', tags:['captura'], upd:'2026-09-19T11:12'},
+  {id:6, body:'Wi-fi do escritório\nrede "Herbario-5G"', tags:['trabalho'], upd:'2026-09-12T09:00'},
+];
+const mems = [
+  {id:'MEM-0142', date:'2026-09-26', title:'Almoço com Ana no Jardim Botânico', body:'Restaurante Couve-Flor. Falamos da viagem para Itatiaia.'},
+  {id:'MEM-0141', date:'2026-09-24', title:'Consulta com oftalmologista', body:'Grau estável. Voltar em 1 ano.'},
+  {id:'MEM-0140', date:'2026-09-15', title:'Entrega do relatório Flora', body:'Enviado para a coordenação às 17h.'},
+  {id:'MEM-0139', date:'2026-08-30', title:'Viagem a Petrópolis', body:'Museu Imperial e Palácio de Cristal.'},
+  {id:'MEM-0138', date:'2026-08-12', title:'Troca de óleo do carro', body:'Oficina do Jorge. 42.310 km.'},
+];
+const docs = [
+  {id:'d1', title:'Projetos', icon:'📁', parent:null},
+  {id:'d2', title:'Flora do Brasil', icon:'🌿', parent:'d1', tags:['trabalho'], upd:'2026-09-22', files:['cronograma-2026.xlsx'], links:['floradobrasil.jbrj.gov.br']},
+  {id:'d3', title:'Reunião de setembro', icon:'📝', parent:'d2', upd:'2026-09-23', notes:[3],
+   html:'<h3>Pauta</h3><ul><li>Planilha de ocorrências</li><li>Revisão do protocolo</li><li>Datas de campo</li></ul><h3>Encaminhamentos</h3><table><tr><th>Quem</th><th>O quê</th><th>Quando</th></tr><tr><td>Marina</td><td>Mapear colunas DwC</td><td>10/out</td></tr><tr><td>Eduardo</td><td>Revisar protocolo</td><td>03/out</td></tr></table>'},
+  {id:'d4', title:'Protocolo de coleta', icon:'🧪', parent:'d2', files:['protocolo-v3.pdf']},
+  {id:'d5', title:'pkdMobile', icon:'📱', parent:'d1', upd:'2026-09-27'},
+  {id:'d6', title:'Pessoal', icon:'🏠', parent:null},
+  {id:'d7', title:'Saúde', icon:'🩺', parent:'d6', files:['exames-2026.pdf']},
+  {id:'d8', title:'Receitas', icon:'🍳', parent:'d6'},
+  {id:'d9', title:'Pão de fermentação natural', icon:'🍞', parent:'d8', upd:'2026-09-14',
+   html:'<h3>Ingredientes</h3><ul><li>500 g de farinha</li><li>350 g de água</li><li>100 g de levain</li><li>10 g de sal</li></ul><h3>Passos</h3><ol><li>Autólise por 1 h</li><li>Dobras a cada 30 min (4×)</li><li>Geladeira por 12 h</li><li>Forno a 250 °C</li></ol>'},
+  {id:'d10', title:'Referências', icon:'📚', parent:null},
+  {id:'d11', title:'Darwin Core', icon:'🦋', parent:'d10', tags:['trabalho'], notes:[3,5], links:['dwc.tdwg.org']},
+];
+
+const P = new URLSearchParams(location.search);
+const S = {variant: 'ABC'.includes(P.get('variant') || '_') ? P.get('variant') : 'A', theme: P.get('theme') === 'dark' ? 'dark' : 'light',
+  tab:'notas', stack:[], q:'', sheet:null, draft:'', drawer:false, filter:'tudo', toast:'',
+  open:new Set(['d1','d2','2026','2026-09']), sec:new Set(['notas','mem','docs','tags'])};
+
+// ─── shared pieces ──────────────────────────────────────────────────────
+const noteTitle = n => n.body.split('\n')[0] || 'Nota sem título';
+const noteRest = n => n.body.split('\n').slice(1).join('\n');
+const chips = tags => (tags || []).map(t => `<span class="chip" style="background:${TAGS[t]}">#${t}</span>`).join('');
+const get = ref => { const [t, id] = ref.split(':'); return [t, t === 'note' ? notes.find(n => n.id == id) : t === 'mem' ? mems.find(m => m.id === id) : docs.find(d => d.id === id)]; };
+const kindLabel = ref => { const [t, o] = get(ref); return t === 'note' ? 'Nota' : t === 'mem' ? 'Memória' : o.title; };
+const docPath = o => { const p = []; while (o.parent) { o = docs.find(d => d.id === o.parent); p.unshift(o.title); } return p.join(' › '); };
+const bar = (left, title, right) => `<header class="bar">${left}<h1>${esc(title)}</h1>${right}</header>`;
+const back = `<button class="ib" data-act="back"><i class='bx bx-arrow-back'></i></button>`;
+const themeBtn = () => `<button class="ib" data-act="theme"><i class='bx bx-${S.theme === 'dark' ? 'sun' : 'moon'}'></i></button>`;
+
+const noteCard = n => `<div class="card" data-act="open" data-arg="note:${n.id}"><b>${esc(noteTitle(n))}</b><p>${esc(noteRest(n))}</p>${chips(n.tags)}</div>`;
+const noteRow = n => `<div class="row" data-act="open" data-arg="note:${n.id}"><i class='bx bx-note ico'></i><div class="t"><b>${esc(noteTitle(n))}</b><small>${esc(noteRest(n).replace(/\n/g, ' · '))}</small></div><span class="meta">${short(n.upd)}</span></div>`;
+const memRow = m => `<div class="row" data-act="open" data-arg="mem:${m.id}"><div class="day"><b>${+m.date.slice(8)}</b><small>${dt(m.date).toLocaleDateString('pt-BR', {weekday:'short'})}</small></div><div class="t"><b>${esc(m.title)}</b><small>${esc(m.body)}</small></div></div>`;
+const docRow = d => `<div class="row" data-act="open" data-arg="doc:${d.id}"><span class="ico">${d.icon}</span><div class="t"><b>${esc(d.title)}</b><small>${esc(docPath(d) || 'Raiz')}</small></div></div>`;
+
+function memTimeline(list) {
+  let cur = '', h = '';
+  for (const m of [...list].sort((a, b) => b.date.localeCompare(a.date))) {
+    const mo = m.date.slice(0, 7);
+    if (mo !== cur) { cur = mo; h += `<div class="month">${MONTHS[+mo.slice(5) - 1]} ${mo.slice(0, 4)}</div>`; }
+    h += memRow(m);
+  }
+  return h;
+}
+const chev = (key, open) => `<button class="tw" data-act="toggle" data-arg="${key}"><i class='bx bx-chevron-${open ? 'down' : 'right'}'></i></button>`;
+const pad = depth => `style="padding-left:${6 + depth * 16}px"`;
+function tree(parent = null, depth = 0) {
+  return docs.filter(d => d.parent === parent).map(d => {
+    const kids = docs.some(k => k.parent === d.id), open = S.open.has(d.id);
+    return `<div class="node" ${pad(depth)}>${kids ? chev(d.id, open) : '<span class="tw"></span>'}<span class="nt" data-act="open" data-arg="doc:${d.id}">${d.icon} ${esc(d.title)}</span></div>${kids && open ? tree(d.id, depth + 1) : ''}`;
+  }).join('');
+}
+function memTree() { // Ano → Mês → Dia, como a Memória Cronológica da PWA
+  const uniq = a => [...new Set(a)].sort().reverse();
+  return uniq(mems.map(m => m.date.slice(0, 4))).map(y => {
+    let h = `<div class="node" ${pad(1)}>${chev(y, S.open.has(y))}<span class="nt" data-act="toggle" data-arg="${y}">${y}</span></div>`;
+    if (S.open.has(y)) h += uniq(mems.filter(m => m.date.startsWith(y)).map(m => m.date.slice(0, 7))).map(mo => {
+      let hh = `<div class="node" ${pad(2)}>${chev(mo, S.open.has(mo))}<span class="nt" data-act="toggle" data-arg="${mo}">${MONTHS[+mo.slice(5) - 1]}</span></div>`;
+      if (S.open.has(mo)) hh += mems.filter(m => m.date.startsWith(mo)).sort((a, b) => b.date.localeCompare(a.date))
+        .map(m => `<div class="node" ${pad(3)}><span class="tw"></span><span class="nt" data-act="open" data-arg="mem:${m.id}"><b class="dd">${m.date.slice(8)}</b>${esc(m.title)}</span></div>`).join('');
+      return hh;
+    }).join('');
+    return h;
+  }).join('');
+}
+function results(q) {
+  if (!q.trim()) return '';
+  const k = norm(q.trim());
+  const sec = (label, items, fn) => items.length ? `<div class="month">${label} · ${items.length}</div>${items.map(fn).join('')}` : '';
+  return sec('Notas', notes.filter(n => norm(n.body + ' ' + n.tags.join(' ')).includes(k)), noteRow)
+    + sec('Memórias', mems.filter(m => norm(m.title + ' ' + m.body).includes(k)), memRow)
+    + sec('Documentos', docs.filter(d => norm(d.title).includes(k)), docRow)
+    || '<p class="empty">Nada encontrado.</p>';
+}
+function detail(ref) {
+  const [t, o] = get(ref);
+  if (t === 'note') return `<div class="detail"><div class="meta">Editada em ${short(o.upd)} ${chips(o.tags)}</div><textarea id="n${o.id}" data-note="${o.id}" class="note-edit">${esc(o.body)}</textarea><div class="meta"><i class='bx bx-cloud-upload'></i> Salvo automaticamente</div></div>`;
+  if (t === 'mem') return `<div class="detail"><div class="bigdate">${dt(o.date).toLocaleDateString('pt-BR', {weekday:'long', day:'numeric', month:'long', year:'numeric'})}</div><h2>${esc(o.title)}</h2><p>${esc(o.body)}</p><div class="meta">${o.id}</div></div>`;
+  const kids = docs.filter(d => d.parent === o.id), rel = notes.filter(n => (o.notes || []).includes(n.id));
+  const lite = (arr, icon) => arr && arr.length ? arr.map(x => `<div class="lite"><i class='bx ${icon}'></i>${esc(x)}</div>`).join('') : '<div class="meta">Nenhum</div>';
+  return `<div class="detail"><div class="meta">${esc(docPath(o) || 'Raiz')} · <i class='bx bx-lock-alt'></i> só leitura</div><h1>${o.icon} ${esc(o.title)}</h1>${chips(o.tags)}
+    ${o.html || `<p>Corpo do Documento <b>${esc(o.title)}</b>. Na v1 o corpo vem do TipTap e é só leitura.</p>`}
+    ${kids.length ? `<h3>Subdocumentos</h3>${kids.map(docRow).join('')}` : ''}
+    <div class="assoc"><h4>Notas relacionadas</h4>${rel.length ? rel.map(noteRow).join('') : '<div class="meta">Nenhuma</div>'}
+    <h4>Arquivos</h4>${lite(o.files, 'bx-file')}<h4>Links externos</h4>${lite(o.links, 'bx-link-external')}</div></div>`;
+}
+const detailScreen = (ref, right = '') => `<div class="app">${bar(back, kindLabel(ref), right)}<div class="scroll">${detail(ref)}</div></div>`;
+const searchInput = ph => `<input id="q" placeholder="${ph}" value="${esc(S.q)}" autocomplete="off">`;
+
+// ─── A · Notas-first ────────────────────────────────────────────────────
+function VA() {
+  if (S.stack.length) return detailScreen(S.stack.at(-1));
+  const T = {
+    notas: ['Notas', () => `<div class="grid">${notes.map(noteCard).join('')}</div>`, 'capture', 'bx-plus'],
+    mem: ['Memórias', () => memTimeline(mems), 'newMem', 'bx-calendar-plus'],
+    docs: ['Documentos', () => `<div class="tree">${tree()}</div>`],
+    busca: ['Busca', () => `<div class="omni sm"><i class='bx bx-search'></i>${searchInput('Notas, Memórias, Documentos')}</div>${results(S.q)}`],
+  }[S.tab];
+  const nav = [['notas','bx-note','Notas'],['mem','bx-calendar','Memórias'],['docs','bx-folder','Documentos'],['busca','bx-search','Busca']]
+    .map(([k, i, l]) => `<button class="${S.tab === k ? 'on' : ''}" data-act="tab" data-arg="${k}"><i class='bx ${i}'></i>${l}</button>`).join('');
+  return `<div class="app">${bar('', T[0], themeBtn())}<div class="scroll">${T[1]()}</div>${T[2] ? `<button class="fab" data-act="${T[2]}"><i class='bx ${T[3]}'></i></button>` : ''}<nav class="nav">${nav}</nav></div>`;
+}
+
+// ─── B · Espelho da PWA ─────────────────────────────────────────────────
+function sidebar() {
+  const top = `<div class="sidesearch">${searchInput('Buscar no PKD')}</div>`;
+  if (S.q.trim()) return top + results(S.q);
+  const sec = (k, label, icon, add, body) => `<div class="sec"><div class="sech" data-act="sec" data-arg="${k}"><i class='bx bx-chevron-${S.sec.has(k) ? 'down' : 'right'}'></i><i class='bx ${icon}'></i><b>${label}</b>${add ? `<button class="ib sm" data-act="${add}"><i class='bx bx-plus'></i></button>` : ''}</div>${S.sec.has(k) ? body() : ''}</div>`;
+  return top
+    + sec('notas', 'Notas', 'bx-note', 'capture', () => notes.map(n => `<div class="node" ${pad(2)}><span class="nt" data-act="open" data-arg="note:${n.id}">${esc(noteTitle(n))}</span></div>`).join(''))
+    + sec('mem', 'Memória Cronológica', 'bx-calendar', 'newMem', memTree)
+    + sec('docs', 'Documentos', 'bx-folder', '', () => `<div class="tree">${tree(null, 1)}</div>`)
+    + sec('tags', 'Tags', 'bx-purchase-tag', '', () => `<div style="padding:0 16px 12px">${chips(Object.keys(TAGS))}</div>`);
+}
+function VB() {
+  if (!S.stack.length) return `<div class="app">${bar('<span class="logo">PKD</span>', '', themeBtn())}<div class="scroll side">${sidebar()}</div></div>`;
+  const ref = S.stack.at(-1);
+  return `<div class="app">${bar(back, kindLabel(ref), `<button class="ib" data-act="drawer"><i class='bx bx-menu'></i></button>`)}<div class="scroll">${detail(ref)}</div>${S.drawer ? `<div class="drawer"><div class="rest" data-act="drawer"></div><div class="panel side">${sidebar()}</div></div>` : ''}</div>`;
+}
+
+// ─── C · Busca-first ────────────────────────────────────────────────────
+function VC() {
+  if (S.stack.length) return detailScreen(S.stack.at(-1));
+  const q = S.q.trim();
+  let body;
+  if (q) body = `<div class="acts"><div class="act p" data-act="quickNote"><i class='bx bx-note'></i><div class="t"><b>Criar Nota</b><small>${esc(q)}</small></div></div><div class="act" data-act="quickMem"><i class='bx bx-calendar-plus'></i><div class="t"><b>Criar Memória de hoje</b><small>${esc(q)}</small></div></div></div>${results(q)}`;
+  else {
+    const recent = () => [...notes.map(n => [n.upd, noteRow(n)]), ...mems.map(m => [m.date, memRow(m)]), ...docs.filter(d => d.upd).map(d => [d.upd, docRow(d)])]
+      .sort((a, b) => b[0].localeCompare(a[0])).map(x => x[1]).join('');
+    body = `<div class="chips">${[['tudo','Recentes'],['notas','Notas'],['mem','Memórias'],['docs','Documentos']].map(([k, l]) => `<button class="fchip ${S.filter === k ? 'on' : ''}" data-act="filter" data-arg="${k}">${l}</button>`).join('')}</div>`
+      + {tudo: recent, notas: () => notes.map(noteRow).join(''), mem: () => memTimeline(mems), docs: () => `<div class="tree">${tree()}</div>`}[S.filter]();
+  }
+  return `<div class="app"><div class="chead"><div class="omni"><i class='bx bx-search'></i>${searchInput('Buscar ou escrever uma Nota…')}${S.q ? `<button class="ib" data-act="clearQ"><i class='bx bx-x'></i></button>` : `<button class="ib"><i class='bx bx-microphone'></i></button>`}</div>${themeBtn()}</div><div class="scroll">${body}</div></div>`;
+}
+
+// ─── sheets, info, render ──────────────────────────────────────────────
+function sheet() {
+  if (!S.sheet) return '';
+  const save = (act, label) => `<div class="btns"><button class="btn" data-act="closeSheet">Cancelar</button><button class="btn p" data-act="${act}">${label}</button></div>`;
+  const inner = {
+    note: () => `<h3>Nova Nota</h3><textarea id="draft" placeholder="Escreva…">${esc(S.draft)}</textarea>${save('saveNote', 'Salvar')}`,
+    share: () => `<div class="from"><i class='bx bxl-chrome'></i> Recebido do Chrome (share intent)</div><h3>Nova Nota</h3><textarea id="draft">${esc(S.draft)}</textarea>${save('saveNote', 'Salvar Nota')}`,
+    mem: () => `<h3>Nova Memória</h3><input type="date" id="mDate" value="${TODAY}"><input id="mTitle" placeholder="O que aconteceu?"><textarea id="mBody" placeholder="Detalhes (opcional)" style="min-height:80px"></textarea>${save('saveMem', 'Salvar')}`,
+  }[S.sheet]();
+  return `<div class="scrim" data-act="closeSheet"><div class="sheet"><div class="grip"></div>${inner}</div></div>`;
+}
+const V = {
+  A: {name:'Notas-first', render:VA, info:`<p><b>Tela inicial:</b> feed de Notas em cartões. O FAB cria uma Nota (na aba Memórias, cria uma Memória).</p><p><b>Navegação:</b> barra inferior com Notas · Memórias · Documentos · Busca.</p><p><b>Custo:</b> criar Nota = 1 toque. Abrir Documento = aba + Árvore.</p>`},
+  B: {name:'Espelho da PWA', render:VB, info:`<p><b>Tela inicial:</b> a sidebar da PWA em tela cheia (master): busca, Notas, Memória Cronológica (Ano → Mês → Dia), Árvore e Tags.</p><p><b>Navegação:</b> master-detail. No detalhe, o ☰ abre a mesma sidebar como drawer.</p><p><b>Custo:</b> criar Nota = + na seção Notas. Quem conhece a PWA não aprende nada novo.</p>`},
+  C: {name:'Busca-first', render:VC, info:`<p><b>Tela inicial:</b> uma caixa única. Escrever já mostra resultados e as ações “Criar Nota” e “Criar Memória de hoje”.</p><p><b>Navegação:</b> chips Recentes · Notas · Memórias · Documentos. Sem barra inferior e sem FAB.</p><p><b>Custo:</b> criar Nota = escrever + 1 toque. Tudo passa pela busca.</p>`},
+};
+const ORDER = 'ABC';
+
+function render() {
+  document.body.dataset.theme = S.theme;
+  const a = document.activeElement, id = a && a.id, pos = a && a.selectionStart;
+  $('#screen').innerHTML = V[S.variant].render() + sheet() + (S.toast ? `<div class="toast">${esc(S.toast)}</div>` : '');
+  if (id) { const e = document.getElementById(id); if (e) { e.focus(); try { e.setSelectionRange(pos, pos); } catch {} } }
+  $('#swl').textContent = `${S.variant} · ${V[S.variant].name}`;
+  $('#info').innerHTML = `<span class="tag">PROTOTYPE</span><h2>${S.variant} · ${V[S.variant].name}</h2>${V[S.variant].info}
+    <h3>Roteiro para avaliar</h3><ol><li>Criar uma Nota nova.</li><li>Achar a Nota do dentista.</li><li>Editar a lista de compras.</li><li>Registrar uma Memória de hoje.</li><li>Abrir “Reunião de setembro” pela Árvore.</li><li>Botão <b>Share</b> (barra abaixo): simula um link recebido do Chrome.</li><li>Trocar o tema claro/escuro.</li></ol>
+    <p class="meta">← → trocam a direção. Dados em memória; recarregar zera tudo.</p>`;
+  try { history.replaceState(null, '', `?variant=${S.variant}&theme=${S.theme}`); } catch {}
+}
+const toast = msg => { S.toast = msg; render(); setTimeout(() => { S.toast = ''; render(); }, 1800); };
+const openSheet = (kind, draft = '') => { S.sheet = kind; S.draft = draft; S.drawer = false; render(); setTimeout(() => $('#draft,#mTitle')?.focus()); };
+const now = () => TODAY + 'T' + new Date().toTimeString().slice(0, 5);
+const setVariant = step => { S.variant = ORDER[(ORDER.indexOf(S.variant) + step + 3) % 3]; Object.assign(S, {stack:[], q:'', sheet:null, drawer:false, tab:'notas', filter:'tudo'}); render(); };
+const toggleIn = (set, k) => set.has(k) ? set.delete(k) : set.add(k);
+
+const ACT = {
+  open: ref => { S.stack.push(ref); S.drawer = false; render(); },
+  back: () => { S.stack.pop(); render(); },
+  tab: k => { S.tab = k; S.stack = []; render(); },
+  filter: k => { S.filter = k; render(); },
+  toggle: k => { toggleIn(S.open, k); render(); },
+  sec: k => { toggleIn(S.sec, k); render(); },
+  drawer: () => { S.drawer = !S.drawer; render(); },
+  theme: () => { S.theme = S.theme === 'dark' ? 'light' : 'dark'; render(); },
+  prev: () => setVariant(-1), next: () => setVariant(1),
+  capture: () => openSheet('note'),
+  newMem: () => openSheet('mem'),
+  share: () => openSheet('share', 'Mata Atlântica – Wikipédia\nhttps://pt.wikipedia.org/wiki/Mata_Atlântica'),
+  closeSheet: () => { S.sheet = null; render(); },
+  saveNote: () => { notes.unshift({id: nextNote++, body: S.draft.trim() || 'Nota sem título', tags: [], upd: now()}); S.sheet = null; toast('Nota criada'); },
+  saveMem: () => { mems.unshift({id: 'MEM-0' + nextMem++, date: $('#mDate').value || TODAY, title: $('#mTitle').value.trim() || 'Memória sem título', body: $('#mBody').value.trim()}); S.sheet = null; toast('Memória criada'); },
+  clearQ: () => { S.q = ''; render(); },
+  quickNote: () => { notes.unshift({id: nextNote++, body: S.q.trim(), tags: [], upd: now()}); S.q = ''; toast('Nota criada'); },
+  quickMem: () => { mems.unshift({id: 'MEM-0' + nextMem++, date: TODAY, title: S.q.trim(), body: ''}); S.q = ''; toast('Memória criada'); },
+};
+document.addEventListener('click', e => {
+  const t = e.target.closest('[data-act]');
+  if (!t || (t.classList.contains('scrim') && e.target !== t)) return;
+  e.stopPropagation();
+  ACT[t.dataset.act](t.dataset.arg);
+});
+document.addEventListener('input', e => {
+  const el = e.target;
+  if (el.id === 'q') { S.q = el.value; render(); }
+  else if (el.id === 'draft') S.draft = el.value;
+  else if (el.dataset.note) { const n = notes.find(x => x.id == el.dataset.note); n.body = el.value; n.upd = now(); }
+});
+document.addEventListener('keydown', e => {
+  if (e.target.closest('input,textarea,[contenteditable]')) return;
+  if (e.key === 'ArrowLeft') setVariant(-1);
+  if (e.key === 'ArrowRight') setVariant(1);
+});
+render();
+</script>
+</body>
+</html>
