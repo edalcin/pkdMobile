@@ -8,7 +8,7 @@ Atualizado em 2026-09-27.
   - Spec da v1: [`docs/spec-v1.md`](spec-v1.md).
   - ADR da stack: [`docs/adr/0001-stack-kotlin-compose.md`](adr/0001-stack-kotlin-compose.md).
   - Mapa e tickets: `docs/wayfinder/`.
-- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`, imagem `pkd:stable` = `sha-de4a579`).
+- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `e16e73d`, com `GET /api/notes` e `GET /api/memories` completos).
   - "Encerrar as outras sessões" (`POST /api/sessions/revoke-others` + botão em Administração → Sessões).
   - `/api/capture` cria **Nota** `#captura` e aceita `idempotency_key`.
   - O share da PWA funciona: sem `X-CSRF-Token` quando `Sec-Fetch-Site` é `none`/`same-origin`, e responde `303` para a Nota. Testado no celular.
@@ -69,14 +69,16 @@ Atualizado em 2026-09-27.
   - Todos os Material Icons trocados; dependência `material-icons-extended` removida (APK de release: 3,4 MB).
   - Árvore: o ícone `bx-…` de cada Documento aparece; classe que não existe na 2.1.4 (ex.: `bx-sticky-note`) cai em `bx-file`.
 
-## Próxima ação
+## Próxima ação (retomar daqui)
 
-**A v1 está completa** (spec §2–§6). Decisão do usuário (2026-09-27): **sem biometria**. Sem ela, a tela de Configurações teria só logout e Não enviados, que já ficam na barra de Notas; por isso não há tela de Configurações.
+**A v1 está completa** (spec §2–§6) e a **`v0.8.0` está instalada no celular** (Obtainium, 2026-09-27). Decisão do usuário (2026-09-27): **sem biometria**. Sem ela, a tela de Configurações teria só logout e Não enviados, que já ficam na barra de Notas; por isso não há tela de Configurações.
 
-Pendências:
-1. Usar no celular e anotar ajustes.
+Sessão pausada pelo usuário em 2026-09-27. Ao retomar:
+1. Perguntar o resultado do teste no celular (checklist: trecho e Tags nos cartões; detalhes da Memória; imagem e **Ver** num Documento; Busca agrupada; **Compartilhar → "Nota no PKD"**). Registrar aqui os ajustes.
 2. Candidatos da v1.1 (spec §9): upload de arquivos e câmera; notificação "Neste dia".
-3. ~~Container `notas` no EC2~~: feito em 2026-09-27. Backup em `~/docker-compose_comNotas.yml`; o serviço `notas` saiu do `docker-compose.yml` e o container parado foi removido (`docker rm notas`). Os dados (`~/notas/db`, `~/notas/files`) ficaram no disco; o `atualizar.sh` ainda inclui `notas/db` no backup dos bancos.
+3. Opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
+
+Feito em 2026-09-27: container `notas` removido do EC2. Backup em `~/docker-compose_comNotas.yml`; o serviço saiu do `docker-compose.yml` e o container parado foi removido (`docker rm notas`). Os dados (`~/notas/db`, `~/notas/files`) ficaram no disco. Reverter: `cp ~/docker-compose_comNotas.yml ~/docker-compose.yml && docker-compose up -d`.
 
 ## Slices (em ordem)
 
@@ -107,7 +109,7 @@ Pendências:
 - **Deploy do PKD (EC2 `98.93.8.1`, chave `C:\Users\EDalcin\.ssh\EC2Geral.pem`):**
   1. push no `main` do `../pkd` → o workflow **Build and Publish** gera `edge`;
   2. rodar o workflow **Promote to Production** → `stable`;
-  3. no EC2: `./atualizar.sh --aplicar`. O script faz backup do compose e dos bancos, e o `atualizar.sh` agora aceita notas no comentário `tag de origem`.
+  3. no EC2: `./atualizar.sh --aplicar`. O script faz backup do compose e dos bancos. Conferir no fim que o container `pkd` foi recriado ("Up X seconds"); se o `pkd` não mudou, o promote ainda não tinha rodado.
 
 ## Pendências menores
 
