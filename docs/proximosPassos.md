@@ -71,9 +71,11 @@ Atualizado em 2026-09-27.
 
 ## Próxima ação
 
-Os 8 slices da v1 estão feitos. Falta da spec:
-1. **Configurações** (spec §3): biometria (liga/desliga, BiometricPrompt), logout, lista Não enviados. Hoje logout e Não enviados ficam na barra de Notas.
-2. **Detalhe da Nota ainda sem "Converter"/"Apagar"** — fora da v1 (spec §9), sem ação.
+**A v1 está completa** (spec §2–§6). Decisão do usuário (2026-09-27): **sem biometria**. Sem ela, a tela de Configurações teria só logout e Não enviados, que já ficam na barra de Notas; por isso não há tela de Configurações.
+
+Pendências:
+1. Usar no celular e anotar ajustes.
+2. Candidatos da v1.1 (spec §9): upload de arquivos e câmera; notificação "Neste dia".
 3. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
@@ -84,7 +86,7 @@ Os 8 slices da v1 estão feitos. Falta da spec:
 4. ~~Memórias~~ (feito na v0.4.0).
 5. ~~Documentos/Árvore~~ (feito na v0.5.0).
 6. ~~Busca~~ (feito na v0.6.0).
-7. ~~Share~~ (feito na v0.7.0). O bloqueio biométrico (spec §4) ainda não existe; o Share já fica fora dele.
+7. ~~Share~~ (feito na v0.7.0).
 8. ~~Boxicons~~ (feito na v0.8.0).
 
 ## Como trabalhar (referência rápida)

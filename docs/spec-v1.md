@@ -42,7 +42,7 @@ Referência visual: [`docs/wayfinder/prototypes/01-direcao-visual.prototype.html
   - Memória: data, título, detalhes, `MEM-…`.
   - Documento: caminho na Árvore, corpo (WebView só leitura), Subdocumentos, Associações (Notas relacionadas, Arquivos, Links externos).
 - **Share:** bottom sheet "Nova Nota" com o conteúdo recebido; salvar põe a Nota na fila de envio.
-- **Configurações:** biometria (liga/desliga), logout, lista **Não enviados**.
+- **Logout e Não enviados:** ícones na barra de Notas (sem tela de Configurações: sem biometria, ela só teria esses dois itens).
 - **Tema:** tokens de cor da PWA em Material 3; claro/escuro segue o sistema. Ícones: Boxicons.
 
 ## 4. Autenticação
@@ -51,7 +51,7 @@ Referência visual: [`docs/wayfinder/prototypes/01-direcao-visual.prototype.html
 - Só HTTPS; o app recusa `http://`.
 - Um servidor, uma sessão. Trocar de URL exige logout.
 - Os cookies ficam cifrados (Android Keystore). A senha nunca é guardada; sessão expirada (30 dias sem uso) pede a senha de novo.
-- Biometria/PIN opcional (BiometricPrompt), desligada por padrão. O share intent não passa pelo bloqueio.
+- Sem biometria/PIN (decisão do usuário, 2026-09-27).
 
 ## 5. Offline
 

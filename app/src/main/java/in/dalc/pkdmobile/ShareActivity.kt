@@ -29,7 +29,7 @@ import kotlinx.coroutines.launch
 
 /**
  * Share (spec §6): other apps send text/links (ACTION_SEND). A bottom sheet "Nova Nota" over the other
- * app; Salvar puts a Nota #captura in the Fila de envio. Outside any future biometric lock.
+ * app; Salvar puts a Nota #captura in the Fila de envio.
  */
 class ShareActivity : ComponentActivity() {
     @OptIn(ExperimentalMaterial3Api::class)
