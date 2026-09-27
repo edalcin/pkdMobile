@@ -46,12 +46,19 @@ Atualizado em 2026-09-27.
   - Detalhe só leitura: data completa, título, detalhes, `MEM-…`.
   - Room versão 3 com **migração real** 2→3 (a fila da v0.3.0 sobrevive). Testado: item na fila na v0.3.0, atualização para a nova versão, item enviado.
   - Não enviados: Memória recusada tem só Copiar e Descartar (Recriar abre o sheet de Nota).
-- **PKD (commit no `main` do `../pkd`, ainda não em produção):** `GET /api/memories` devolve também `body_html`. Sem esse deploy, o detalhe da Memória mostra só data e título.
+- **PKD em produção com o `GET /api/memories` novo** (`body_html`), deploy de 2026-09-27.
+- **`v0.5.0`: slice 5 feito** (Documentos, só leitura). Testado no emulador contra um PKD local:
+  - Aba Documentos: a Árvore (`GET /api/tree`) no cache (tabela `docs`, ordem pré-ordem), colapsável, pull-to-refresh.
+  - Detalhe: caminho na Árvore, corpo em WebView sem JavaScript. Pedidos da WebView ao PKD (imagens `/api/attachments/…`) passam pelo app (`shouldInterceptRequest`) com cookie + headers do Cloudflare Access; links abrem fora.
+  - Subdocumentos (do cache da Árvore), Notas relacionadas (abre o Documento ou a Nota do cache), Arquivos (**Ver** = baixa para o cache e abre em outro app via FileProvider; **Baixar** = DownloadManager para Downloads), Links externos.
+  - Cache LRU dos 50 Documentos abertos (tabela `doc_bodies`); offline mostra a cópia com o aviso.
+  - Documento protegido (`encrypted_locked`): mostra "Desbloqueie na PWA" (desbloqueio no app fora da v1).
+  - Room versão 4, migração 3→4 testada (atualização de um aparelho com a v0.4.0).
 
 ## Próxima ação
 
-1. Pôr o PKD em produção (Promote to Production + `./atualizar.sh --aplicar` no EC2) para os detalhes das Memórias.
-2. Slice 5: **Documentos/Árvore**.
+1. Slice 6: **Busca** (servidor `/api/tree?q=` + busca local offline com "resultados parciais").
+2. Container `notas` no EC2: o `atualizar.sh` ligou de novo o app Notas, que foi desligado em 2026-09-26. Tirar do `docker-compose.yml` se não for intencional.
 
 ## Slices (em ordem)
 
@@ -59,7 +66,7 @@ Atualizado em 2026-09-27.
 2. ~~Cache Room + lista de Notas~~ (feito na v0.2.0; criar Nota vai para o slice 3).
 3. ~~Fila de envio~~ (feita na v0.3.0, sem WorkManager). Inclui criar Nota (FAB) e a edição offline.
 4. ~~Memórias~~ (feito na v0.4.0).
-5. **Documentos/Árvore**: `GET /api/tree`, corpo em WebView só leitura, Associações, Arquivos para ver/baixar.
+5. ~~Documentos/Árvore~~ (feito na v0.5.0).
 6. **Busca**: servidor (`/api/tree?q=`); offline, busca local com "resultados parciais".
 7. **Share** (`ACTION_SEND`): pela fila de envio para `/api/capture`, fora do bloqueio biométrico.
 8. **Boxicons**: trocar os Material Icons.

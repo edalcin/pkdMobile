@@ -76,6 +76,17 @@ data class MemoryEntity(
     val pos: Int,
 )
 
+/** Node of the Árvore (GET /api/tree, metadata only). pos = pre-order index, so ORDER BY pos is the tree order. */
+@Entity(tableName = "docs")
+data class DocEntity(@PrimaryKey val id: Long, val parentId: Long?, val title: String, val icon: String, val pos: Int)
+
+/**
+ * An opened Documento (spec §5: bodies of opened Documentos, LRU). json = {"doc", "links", "urls", "attachments"}
+ * as the PKD answers them.
+ */
+@Entity(tableName = "doc_bodies")
+data class DocBodyEntity(@PrimaryKey val id: Long, val json: String, val openedAt: Long)
+
 /**
  * One item of the Fila de envio (spec §5). kind: `create` (body = POST /api/notes), `patch` (body = PATCH
  * fields), `favorite` (body = {"favorite": wanted state}) or `memory` (body = POST /api/memories). failed = Não enviados.
@@ -143,18 +154,48 @@ interface NoteDao {
     @Query("DELETE FROM outbox WHERE seq = :seq") suspend fun deleteOutbox(seq: Long)
     @Query("DELETE FROM outbox") suspend fun clearOutbox()
 
-    @Transaction suspend fun replaceAll(notes: List<NoteEntity>, memories: List<MemoryEntity>, tags: List<TagEntity>) {
-        clearNotes(); insertNotes(notes); clearMemories(); insertMemories(memories); clearTags(); insertTags(tags)
+    @Query("SELECT * FROM docs ORDER BY pos") fun docs(): Flow<List<DocEntity>>
+    @Insert suspend fun insertDocs(docs: List<DocEntity>)
+    @Query("DELETE FROM docs") suspend fun clearDocs()
+    @Query("SELECT * FROM doc_bodies WHERE id = :id") fun docBody(id: Long): Flow<DocBodyEntity?>
+    @Upsert suspend fun upsertDocBody(body: DocBodyEntity)
+    /** ponytail: LRU of the 50 most recently opened Documentos; a size in bytes if bodies get big. */
+    @Query("DELETE FROM doc_bodies WHERE id NOT IN (SELECT id FROM doc_bodies ORDER BY openedAt DESC LIMIT 50)")
+    suspend fun trimDocBodies()
+    @Query("DELETE FROM doc_bodies") suspend fun clearDocBodies()
+
+    @Transaction suspend fun replaceAll(notes: List<NoteEntity>, memories: List<MemoryEntity>, docs: List<DocEntity>, tags: List<TagEntity>) {
+        clearNotes(); insertNotes(notes); clearMemories(); insertMemories(memories)
+        clearDocs(); insertDocs(docs); clearTags(); insertTags(tags)
     }
 
-    @Transaction suspend fun replaceTags(tags: List<TagEntity>) { clearTags(); insertTags(tags) }
+    @Transaction suspend fun replaceTreeAndTags(docs: List<DocEntity>, tags: List<TagEntity>) {
+        clearDocs(); insertDocs(docs); clearTags(); insertTags(tags)
+    }
 
-    @Transaction suspend fun clearAll() { clearNotes(); clearMemories(); clearTags(); clearOutbox() }
+    @Transaction suspend fun clearAll() { clearNotes(); clearMemories(); clearDocs(); clearDocBodies(); clearTags(); clearOutbox() }
 }
 
-@Database(entities = [NoteEntity::class, TagEntity::class, OutboxEntity::class, MemoryEntity::class], version = 3, exportSchema = false)
+@Database(
+    entities = [NoteEntity::class, TagEntity::class, OutboxEntity::class, MemoryEntity::class, DocEntity::class, DocBodyEntity::class],
+    version = 4, exportSchema = false,
+)
 abstract class PkdDb : RoomDatabase() {
     abstract fun dao(): NoteDao
+}
+
+/** v4 adds the Árvore and the opened Documentos. */
+private val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `docs` (`id` INTEGER NOT NULL, `parentId` INTEGER, `title` TEXT NOT NULL, " +
+                "`icon` TEXT NOT NULL, `pos` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `doc_bodies` (`id` INTEGER NOT NULL, `json` TEXT NOT NULL, " +
+                "`openedAt` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+    }
 }
 
 /** v3 adds Memórias. A real migration: the v2 outbox can hold edits the PKD does not have yet. */
@@ -210,7 +251,7 @@ object Notes {
         if (!::dao.isInitialized) {
             // v1 had only the cache, so dropping it on upgrade loses nothing; from v2 on, migrate (the outbox matters).
             dao = Room.databaseBuilder(context, PkdDb::class.java, "pkd.db")
-                .addMigrations(MIGRATION_2_3)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
                 .fallbackToDestructiveMigrationFrom(true, 1)
                 .build().dao()
         }
@@ -234,8 +275,16 @@ object Notes {
             val tags = JSONArray(Api.request("GET", "/api/tags")).objects().map {
                 TagEntity(it.getString("name"), it.optString("color"), it.optString("text_color"))
             }
+            val docs = mutableListOf<DocEntity>()
+            fun walk(nodes: JSONArray, parentId: Long?) {
+                for (o in nodes.objects()) {
+                    docs += DocEntity(o.getLong("id"), parentId, o.optString("title"), o.optString("icon"), docs.size)
+                    o.optJSONArray("children")?.let { walk(it, o.getLong("id")) }
+                }
+            }
+            walk(JSONArray(Api.request("GET", "/api/tree")), null)
             // Items still in the queue live only in the cache: keep it until they go.
-            if (queueEmpty) dao.replaceAll(notes, memories, tags) else dao.replaceTags(tags)
+            if (queueEmpty) dao.replaceAll(notes, memories, docs, tags) else dao.replaceTreeAndTags(docs, tags)
         } catch (e: Exception) {
             error = e.userMessage()
         } finally {
@@ -347,6 +396,22 @@ object Notes {
     }
 
     suspend fun discard(item: OutboxEntity) = queueLock.withLock { dao.deleteOutbox(item.seq) }
+
+    /**
+     * Fetches a Documento + its Associações into the LRU cache (read-only, spec §2). A protected
+     * Documento without unlock comes with encrypted_locked = true and no body; its Arquivos answer 403.
+     */
+    suspend fun openDoc(id: Long) {
+        val doc = JSONObject(Api.request("GET", "/api/documents/$id"))
+        // Go answers `null` for an empty list.
+        fun array(text: String) = if (text.isBlank() || text.trim() == "null") JSONArray() else JSONArray(text)
+        val links = JSONObject(Api.request("GET", "/api/documents/$id/links")).optJSONArray("related") ?: JSONArray()
+        val urls = array(Api.request("GET", "/api/documents/$id/urls"))
+        val attachments = if (doc.optBoolean("encrypted_locked")) JSONArray() else array(Api.request("GET", "/api/documents/$id/attachments"))
+        val json = JSONObject().put("doc", doc).put("links", links).put("urls", urls).put("attachments", attachments)
+        dao.upsertDocBody(DocBodyEntity(id, json.toString(), System.currentTimeMillis()))
+        dao.trimDocBodies()
+    }
 
     suspend fun logout() {
         runCatching { Api.request("POST", "/api/logout") }

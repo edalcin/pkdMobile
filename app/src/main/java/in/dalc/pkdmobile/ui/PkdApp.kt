@@ -47,12 +47,8 @@ private enum class PkdTab(val route: String, val title: String, val icon: ImageV
     Busca("busca", "Busca", Icons.Filled.Search),
 }
 
-/** Tabs not built yet (slices 5 and 6). */
-private fun emptyStateFor(tab: PkdTab): String = when (tab) {
-    PkdTab.Documentos -> "Nenhum Documento ainda"
-    PkdTab.Busca -> "Digite para buscar"
-    else -> ""
-}
+/** Tab not built yet (slice 6). */
+private fun emptyStateFor(tab: PkdTab): String = if (tab == PkdTab.Busca) "Digite para buscar" else ""
 
 @Composable
 fun PkdApp() {
@@ -98,8 +94,15 @@ fun PkdApp() {
             }
             composable("naoenviados") { UnsentScreen(onBack = { navController.popBackStack() }) }
             composable(PkdTab.Memorias.route) { MemoriesScreen(onOpen = { navController.navigate("memoria/$it") }) }
-            listOf(PkdTab.Documentos, PkdTab.Busca).forEach { tab ->
-                composable(tab.route) { PkdTabScreen(tab) }
+            composable(PkdTab.Documentos.route) { DocumentsScreen(onOpen = { navController.navigate("documento/$it") }) }
+            composable(PkdTab.Busca.route) { PkdTabScreen(PkdTab.Busca) }
+            composable("documento/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                DocumentDetailScreen(
+                    it.arguments!!.getLong("id"),
+                    onBack = { navController.popBackStack() },
+                    onOpenDoc = { id -> navController.navigate("documento/$id") },
+                    onOpenNote = { id -> navController.navigate("nota/$id") },
+                )
             }
             composable("nota/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 NoteDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })

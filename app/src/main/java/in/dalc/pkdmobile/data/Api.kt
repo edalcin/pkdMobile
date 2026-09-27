@@ -31,11 +31,7 @@ object Api {
             c.readTimeout = 30_000
             c.instanceFollowRedirects = false
             c.setRequestProperty("Accept", "application/json")
-            Session.cookieHeader().takeIf { it.isNotEmpty() }?.let { c.setRequestProperty("Cookie", it) }
-            Session.cfAccess?.let { (id, secret) ->
-                c.setRequestProperty("CF-Access-Client-Id", id)
-                c.setRequestProperty("CF-Access-Client-Secret", secret)
-            }
+            authHeaders().forEach { (k, v) -> c.setRequestProperty(k, v) }
             if (method != "GET") Session.csrf()?.let { c.setRequestProperty("X-CSRF-Token", it) }
             if (body != null) {
                 c.doOutput = true
@@ -51,6 +47,28 @@ object Api {
             if (code in 300..399) throw ApiException(code, "O Cloudflare Access recusou o pedido. Confira o Service Token.")
             if (code >= 400) throw ApiException(code, text.trim().ifEmpty { "HTTP $code" })
             text
+        } finally {
+            c.disconnect()
+        }
+    }
+
+    /** Cookie + Cloudflare Access headers; also for the WebView and DownloadManager. */
+    fun authHeaders(): Map<String, String> = buildMap {
+        Session.cookieHeader().takeIf { it.isNotEmpty() }?.let { put("Cookie", it) }
+        Session.cfAccess?.let { (id, secret) -> put("CF-Access-Client-Id", id); put("CF-Access-Client-Secret", secret) }
+    }
+
+    /** Blocking GET of a binary (attachment, inline image). Returns (mime type, bytes); throws ApiException on error. */
+    fun getBytes(path: String): Pair<String?, ByteArray> {
+        val c = URL(Session.baseUrl + path).openConnection() as HttpURLConnection
+        try {
+            c.connectTimeout = 15_000
+            c.readTimeout = 60_000
+            c.instanceFollowRedirects = false
+            authHeaders().forEach { (k, v) -> c.setRequestProperty(k, v) }
+            val code = c.responseCode
+            if (code !in 200..299) throw ApiException(code, "HTTP $code")
+            return c.contentType to c.inputStream.use { it.readBytes() }
         } finally {
             c.disconnect()
         }
