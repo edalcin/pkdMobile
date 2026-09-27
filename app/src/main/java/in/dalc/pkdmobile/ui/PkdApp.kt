@@ -40,18 +40,18 @@ import androidx.compose.foundation.layout.WindowInsets
  * Notas já usam o cache Room; as outras abas ainda mostram um estado vazio (ver docs/proximosPassos.md).
  */
 
-private enum class PkdTab(val route: String, val title: String, val icon: ImageVector, val hasFab: Boolean) {
-    Notas("notas", "Notas", Icons.Filled.Description, hasFab = true),
-    Memorias("memorias", "Memórias", Icons.Filled.History, hasFab = true),
-    Documentos("documentos", "Documentos", Icons.Filled.Folder, hasFab = false),
-    Busca("busca", "Busca", Icons.Filled.Search, hasFab = false),
+private enum class PkdTab(val route: String, val title: String, val icon: ImageVector) {
+    Notas("notas", "Notas", Icons.Filled.Description),
+    Memorias("memorias", "Memórias", Icons.Filled.History),
+    Documentos("documentos", "Documentos", Icons.Filled.Folder),
+    Busca("busca", "Busca", Icons.Filled.Search),
 }
 
+/** Tabs not built yet (slices 5 and 6). */
 private fun emptyStateFor(tab: PkdTab): String = when (tab) {
-    PkdTab.Notas -> ""
-    PkdTab.Memorias -> "Nenhuma Memória ainda"
     PkdTab.Documentos -> "Nenhum Documento ainda"
     PkdTab.Busca -> "Digite para buscar"
+    else -> ""
 }
 
 @Composable
@@ -97,11 +97,15 @@ fun PkdApp() {
                 NotesScreen(onOpen = { navController.navigate("nota/$it") }, onUnsent = { navController.navigate("naoenviados") })
             }
             composable("naoenviados") { UnsentScreen(onBack = { navController.popBackStack() }) }
-            PkdTab.entries.filter { it != PkdTab.Notas }.forEach { tab ->
+            composable(PkdTab.Memorias.route) { MemoriesScreen(onOpen = { navController.navigate("memoria/$it") }) }
+            listOf(PkdTab.Documentos, PkdTab.Busca).forEach { tab ->
                 composable(tab.route) { PkdTabScreen(tab) }
             }
             composable("nota/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 NoteDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
+            }
+            composable("memoria/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
+                MemoryDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
             }
         }
     }
@@ -112,14 +116,6 @@ fun PkdApp() {
 private fun PkdTabScreen(tab: PkdTab) {
     Scaffold(
         topBar = { TopAppBar(title = { Text(tab.title) }) },
-        floatingActionButton = {
-            if (tab.hasFab) {
-                // ponytail: FAB ainda não cria Nota/Memória — vem no slice de cache + fila de envio.
-                FloatingActionButton(onClick = { }) {
-                    Icon(Icons.Filled.Add, contentDescription = "Novo")
-                }
-            }
-        },
     ) { padding ->
         Box(
             modifier = Modifier.fillMaxSize().padding(padding),

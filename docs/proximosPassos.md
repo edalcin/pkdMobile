@@ -40,16 +40,25 @@ Atualizado em 2026-09-27.
   - **Desvio do ADR 0001:** sem WorkManager. A spec não tem sync em background, então a fila roda no processo do app (`Notes.flush`). Adotar WorkManager só se o envio em background passar a ser requisito.
   - O POST de uma Nota com título repetido não falha: o PKD dá outro título ("… (2)").
 
+- **`v0.4.0`: slice 4 feito** (Memórias). Testado no emulador contra um PKD local:
+  - Aba Memórias: lista agrupada por mês (mais novas primeiro, como o PKD), dia + dia da semana, hora ou período (Almoço, Tarde…). Pull-to-refresh.
+  - FAB → bottom sheet "Nova Memória" (data com DatePicker, título, detalhes), pela fila de envio (kind `memory`, `idempotency_key`). Offline mostra "Na fila".
+  - Detalhe só leitura: data completa, título, detalhes, `MEM-…`.
+  - Room versão 3 com **migração real** 2→3 (a fila da v0.3.0 sobrevive). Testado: item na fila na v0.3.0, atualização para a nova versão, item enviado.
+  - Não enviados: Memória recusada tem só Copiar e Descartar (Recriar abre o sheet de Nota).
+- **PKD (commit no `main` do `../pkd`, ainda não em produção):** `GET /api/memories` devolve também `body_html`. Sem esse deploy, o detalhe da Memória mostra só data e título.
+
 ## Próxima ação
 
-1. Slice 4: **Memórias** (lista por mês, bottom sheet "Nova Memória" pela fila de envio).
+1. Pôr o PKD em produção (Promote to Production + `./atualizar.sh --aplicar` no EC2) para os detalhes das Memórias.
+2. Slice 5: **Documentos/Árvore**.
 
 ## Slices (em ordem)
 
 1. ~~Login + sessão~~ (feito na v0.2.0).
 2. ~~Cache Room + lista de Notas~~ (feito na v0.2.0; criar Nota vai para o slice 3).
 3. ~~Fila de envio~~ (feita na v0.3.0, sem WorkManager). Inclui criar Nota (FAB) e a edição offline.
-4. **Memórias**: lista por mês, bottom sheet "Nova Memória".
+4. ~~Memórias~~ (feito na v0.4.0).
 5. **Documentos/Árvore**: `GET /api/tree`, corpo em WebView só leitura, Associações, Arquivos para ver/baixar.
 6. **Busca**: servidor (`/api/tree?q=`); offline, busca local com "resultados parciais".
 7. **Share** (`ACTION_SEND`): pela fila de envio para `/api/capture`, fora do bloqueio biométrico.

@@ -195,7 +195,7 @@ fun UnsentScreen(onBack: () -> Unit) {
                         Text("O PKD recusou: ${item.error}", style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.error)
                         Row {
                             TextButton(onClick = { clipboard.setText(AnnotatedString(item.describe())) }) { Text("Copiar") }
-                            if (item.noteText() != null) TextButton(onClick = { recreate = item }) { Text("Recriar") }
+                            if (item.isNote() && item.noteText() != null) TextButton(onClick = { recreate = item }) { Text("Recriar") }
                             TextButton(onClick = { Notes.scope.launch { Notes.discard(item) } }) { Text("Descartar") }
                         }
                     }

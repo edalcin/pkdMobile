@@ -15,6 +15,8 @@ import androidx.room.Query
 import androidx.room.Room
 import androidx.room.RoomDatabase
 import androidx.room.Transaction
+import androidx.room.migration.Migration
+import androidx.sqlite.db.SupportSQLiteDatabase
 import androidx.room.Update
 import androidx.room.Upsert
 import kotlinx.coroutines.CoroutineScope
@@ -58,9 +60,25 @@ data class NoteEntity(
 @Entity(tableName = "tags")
 data class TagEntity(@PrimaryKey val name: String, val color: String, val textColor: String)
 
+/** Memória (spec §2: create and view). pos = order of GET /api/memories (newest first); negative id = still in the queue. */
+@Entity(tableName = "memories")
+data class MemoryEntity(
+    @PrimaryKey val id: Long,
+    val memoryId: String, // MEM-…, empty until the PKD has it
+    val title: String,
+    val bodyHtml: String,
+    val year: Int,
+    val month: Int?,
+    val day: Int?,
+    val hour: Int?,
+    val minute: Int?,
+    val period: String,
+    val pos: Int,
+)
+
 /**
- * One item of the Fila de envio (spec §5). kind: `create` (body = POST /api/notes), `patch`
- * (body = PATCH fields) or `favorite` (body = {"favorite": wanted state}). failed = Não enviados.
+ * One item of the Fila de envio (spec §5). kind: `create` (body = POST /api/notes), `patch` (body = PATCH
+ * fields), `favorite` (body = {"favorite": wanted state}) or `memory` (body = POST /api/memories). failed = Não enviados.
  */
 @Entity(tableName = "outbox")
 data class OutboxEntity(
@@ -78,8 +96,13 @@ data class OutboxEntity(
         listOf(title, htmlToText(json.optString("content"))).filter { it.isNotEmpty() }.joinToString("\n")
     }
 
+    /** Recriar opens the "Nova Nota" sheet, so only Nota items can use it. */
+    fun isNote() = kind != "memory"
+
     fun describe(): String = listOfNotNull(
+        if (kind == "memory") "Memória" else null,
         noteText(),
+        json.optJSONObject("date")?.let { d -> "Data: %02d/%02d/%d".format(d.optInt("day"), d.optInt("month"), d.optInt("year")) },
         json.optJSONArray("tags")?.let { "Tags: " + it.strings().joinToString(", ") { t -> "#$t" } },
         if (json.has("favorite")) "Favorita: " + if (json.getBoolean("favorite")) "sim" else "não" else null,
     ).joinToString("\n")
@@ -99,6 +122,14 @@ interface NoteDao {
     @Query("DELETE FROM notes") suspend fun clearNotes()
     @Query("DELETE FROM tags") suspend fun clearTags()
 
+    @Query("SELECT * FROM memories ORDER BY pos") fun memories(): Flow<List<MemoryEntity>>
+    @Query("SELECT * FROM memories WHERE id = :id") fun memory(id: Long): Flow<MemoryEntity?>
+    @Query("SELECT MIN(id) FROM memories") suspend fun minMemoryId(): Long?
+    @Upsert suspend fun upsertMemory(memory: MemoryEntity)
+    @Insert suspend fun insertMemories(memories: List<MemoryEntity>)
+    @Query("DELETE FROM memories WHERE id = :id") suspend fun deleteMemory(id: Long)
+    @Query("DELETE FROM memories") suspend fun clearMemories()
+
     @Query("SELECT * FROM outbox WHERE failed = 0 ORDER BY seq") suspend fun pending(): List<OutboxEntity>
     @Query("SELECT COUNT(*) FROM outbox WHERE failed = 0") fun pendingCount(): Flow<Int>
     @Query("SELECT * FROM outbox WHERE failed = 1 ORDER BY seq") fun failed(): Flow<List<OutboxEntity>>
@@ -112,18 +143,29 @@ interface NoteDao {
     @Query("DELETE FROM outbox WHERE seq = :seq") suspend fun deleteOutbox(seq: Long)
     @Query("DELETE FROM outbox") suspend fun clearOutbox()
 
-    @Transaction suspend fun replaceAll(notes: List<NoteEntity>, tags: List<TagEntity>) {
-        clearNotes(); insertNotes(notes); clearTags(); insertTags(tags)
+    @Transaction suspend fun replaceAll(notes: List<NoteEntity>, memories: List<MemoryEntity>, tags: List<TagEntity>) {
+        clearNotes(); insertNotes(notes); clearMemories(); insertMemories(memories); clearTags(); insertTags(tags)
     }
 
     @Transaction suspend fun replaceTags(tags: List<TagEntity>) { clearTags(); insertTags(tags) }
 
-    @Transaction suspend fun clearAll() { clearNotes(); clearTags(); clearOutbox() }
+    @Transaction suspend fun clearAll() { clearNotes(); clearMemories(); clearTags(); clearOutbox() }
 }
 
-@Database(entities = [NoteEntity::class, TagEntity::class, OutboxEntity::class], version = 2, exportSchema = false)
+@Database(entities = [NoteEntity::class, TagEntity::class, OutboxEntity::class, MemoryEntity::class], version = 3, exportSchema = false)
 abstract class PkdDb : RoomDatabase() {
     abstract fun dao(): NoteDao
+}
+
+/** v3 adds Memórias. A real migration: the v2 outbox can hold edits the PKD does not have yet. */
+private val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `memories` (`id` INTEGER NOT NULL, `memoryId` TEXT NOT NULL, `title` TEXT NOT NULL, " +
+                "`bodyHtml` TEXT NOT NULL, `year` INTEGER NOT NULL, `month` INTEGER, `day` INTEGER, `hour` INTEGER, " +
+                "`minute` INTEGER, `period` TEXT NOT NULL, `pos` INTEGER NOT NULL, PRIMARY KEY(`id`))",
+        )
+    }
 }
 
 // U+FFFC is the placeholder Html.fromHtml leaves for <img>; the card shows it as a box.
@@ -141,6 +183,8 @@ fun textToFields(text: String): JSONObject? {
 }
 
 private fun JSONArray.strings(): List<String> = List(length()) { getString(it) }
+
+private fun JSONObject.optIntOrNull(key: String): Int? = if (isNull(key)) null else optInt(key)
 
 private fun JSONObject.mergedWith(other: JSONObject) = JSONObject(toString()).also { m -> other.keys().forEach { m.put(it, other.get(it)) } }
 
@@ -164,8 +208,11 @@ object Notes {
 
     fun init(context: Context) {
         if (!::dao.isInitialized) {
-            // v1 had only the cache, so dropping it on upgrade loses nothing.
-            dao = Room.databaseBuilder(context, PkdDb::class.java, "pkd.db").fallbackToDestructiveMigration(true).build().dao()
+            // v1 had only the cache, so dropping it on upgrade loses nothing; from v2 on, migrate (the outbox matters).
+            dao = Room.databaseBuilder(context, PkdDb::class.java, "pkd.db")
+                .addMigrations(MIGRATION_2_3)
+                .fallbackToDestructiveMigrationFrom(true, 1)
+                .build().dao()
         }
     }
 
@@ -176,11 +223,19 @@ object Notes {
         try {
             val queueEmpty = flush()
             val notes = JSONArray(Api.request("GET", "/api/notes")).objects().map(::noteFromJson)
+            val memories = JSONArray(Api.request("GET", "/api/memories")).objects().mapIndexed { pos, o ->
+                MemoryEntity(
+                    id = o.getLong("id"), memoryId = o.optString("memory_id"), title = o.optString("title"),
+                    bodyHtml = o.optString("body_html"), year = o.getInt("year"), month = o.optIntOrNull("month"),
+                    day = o.optIntOrNull("day"), hour = o.optIntOrNull("hour"), minute = o.optIntOrNull("minute"),
+                    period = o.optString("period"), pos = pos,
+                )
+            }
             val tags = JSONArray(Api.request("GET", "/api/tags")).objects().map {
                 TagEntity(it.getString("name"), it.optString("color"), it.optString("text_color"))
             }
             // Items still in the queue live only in the cache: keep it until they go.
-            if (queueEmpty) dao.replaceAll(notes, tags) else dao.replaceTags(tags)
+            if (queueEmpty) dao.replaceAll(notes, memories, tags) else dao.replaceTags(tags)
         } catch (e: Exception) {
             error = e.userMessage()
         } finally {
@@ -199,6 +254,18 @@ object Notes {
         }
         flush()
         return true
+    }
+
+    /** New Memória (title, details, date). No edit in v1 (spec §9). */
+    suspend fun createMemory(title: String, details: String, year: Int, month: Int, day: Int) {
+        val tempId = minOf(dao.minMemoryId() ?: 0, 0) - 1
+        val content = if (details.isBlank()) "" else textToHtml(details.trim())
+        dao.upsertMemory(MemoryEntity(tempId, "", title.trim(), content, year, month, day, null, null, "", -1))
+        val body = JSONObject().put("title", title.trim()).put("content", content)
+            .put("date", JSONObject().put("year", year).put("month", month).put("day", day))
+            .put("idempotency_key", UUID.randomUUID().toString())
+        queueLock.withLock { dao.insertOutbox(OutboxEntity(noteId = tempId, kind = "memory", body = body.toString())) }
+        flush()
     }
 
     /** Edit title/content/tags/favorite. Edits waiting in the queue for the same Nota merge into one item. */
@@ -236,6 +303,7 @@ object Notes {
                 if (e.code !in 400..499 || e.code == 401 || e.code == 429) return@withLock false
                 dao.updateOutbox(item.copy(failed = true, error = e.userMessage()))
                 if (item.kind == "create") dao.deleteNote(item.noteId)
+                if (item.kind == "memory") dao.deleteMemory(item.noteId)
             } catch (e: IOException) {
                 return@withLock false
             }
@@ -250,6 +318,19 @@ object Notes {
                 val note = noteFromJson(JSONObject(Api.request("POST", "/api/notes", body)))
                 dao.deleteNote(item.noteId)
                 dao.upsert(note)
+            }
+            // The new Memória gets its place in the list on the next refresh; until then it keeps the temp one.
+            "memory" -> {
+                val d = JSONObject(Api.request("POST", "/api/memories", body))
+                dao.deleteMemory(item.noteId)
+                dao.upsertMemory(
+                    MemoryEntity(
+                        id = d.getLong("id"), memoryId = d.optString("memory_id"), title = d.optString("title"),
+                        bodyHtml = d.optString("body_html"), year = d.getInt("assoc_year"), month = d.optIntOrNull("assoc_month"),
+                        day = d.optIntOrNull("assoc_day"), hour = d.optIntOrNull("memory_hour"),
+                        minute = d.optIntOrNull("memory_minute"), period = d.optString("memory_period"), pos = -1,
+                    ),
+                )
             }
             "patch" -> dao.upsert(noteFromJson(JSONObject(Api.request("PATCH", "/api/notes/${item.noteId}", body))))
             // PATCH ignores `favorite`; the PKD only toggles it, so toggle only when the state differs.
