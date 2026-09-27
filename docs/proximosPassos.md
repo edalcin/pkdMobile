@@ -26,10 +26,16 @@ Atualizado em 2026-09-27.
   - O app edita a Nota como texto simples: a formatação rica feita na PWA se perde quando o app salva o texto.
   - O PATCH do PKD ignora `favorite`; o app usa `POST /api/documents/{id}/favorite` (alterna).
 
+- **`v0.2.1`: Cloudflare Access.** `pkd.dalc.in` fica atrás do Cloudflare Access. Sem autorização, o Access responde `302` para o login dele (HTML), e a `v0.2.0` mostrava "Value <html> … cannot be converted to JSONObject". Decisão do usuário: **Service Token**.
+  - A tela de login tem os campos opcionais `CF-Access-Client-Id`/`-Secret`, que ficam cifrados no Keystore. O app manda os dois headers em todo pedido.
+  - Um `3xx` mostra "O Cloudflare Access recusou o pedido. Confira o Service Token."
+  - Se o primeiro login falha, o app esquece o servidor, e a tela não diz mais "A sessão expirou".
+
 ## Próxima ação
 
-1. Pôr o PKD em produção (passos em "Deploy do PKD", abaixo) e confirmar os trechos e Tags nos cartões.
-2. Slice 3: **fila de envio**, com criar Nota (FAB → bottom sheet "Nova Nota").
+1. **Usuário, no Zero Trust:** criar um Service Token (Access → Service credentials) e adicionar à aplicação `pkd.dalc.in` uma policy com a action **Service Auth** que inclua esse token. No celular: "Sair e trocar de servidor", e depois login com o token. **Ainda não testado com o token real.**
+2. Pôr o PKD em produção (passos em "Deploy do PKD", abaixo) e confirmar os trechos e Tags nos cartões.
+3. Slice 3: **fila de envio**, com criar Nota (FAB → bottom sheet "Nova Nota").
 
 ## Slices (em ordem)
 

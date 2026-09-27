@@ -1,6 +1,8 @@
 package `in`.dalc.pkdmobile.ui
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -40,6 +42,8 @@ fun LoginScreen() {
     var url by rememberSaveable { mutableStateOf(fixedUrl ?: "https://") }
     var password by remember { mutableStateOf("") }
     var code by rememberSaveable { mutableStateOf("") }
+    var cfId by rememberSaveable { mutableStateOf("") }
+    var cfSecret by remember { mutableStateOf("") }
     var challenge by rememberSaveable { mutableStateOf<String?>(null) }
     var busy by remember { mutableStateOf(false) }
     var error by remember { mutableStateOf<String?>(null) }
@@ -50,13 +54,18 @@ fun LoginScreen() {
         try {
             val ch = challenge
             if (ch == null) {
-                Session.setUrl(Session.normalizeUrl(url) ?: throw ApiException(0, "Use uma URL https://"))
+                if (fixedUrl == null) {
+                    val cf = (cfId.trim() to cfSecret.trim()).takeIf { it.first.isNotEmpty() && it.second.isNotEmpty() }
+                    Session.setServer(Session.normalizeUrl(url) ?: throw ApiException(0, "Use uma URL https://"), cf)
+                }
                 challenge = Api.login(password)
                 password = ""
             } else {
                 Api.login2fa(ch, code.trim())
             }
         } catch (e: Exception) {
+            // First login failed: forget the server, so the screen does not say "session expired".
+            if (fixedUrl == null && challenge == null) Session.clear()
             error = if (e is ApiException && e.code == 401) {
                 if (challenge == null) "Senha incorreta." else "Código incorreto ou vencido."
             } else e.userMessage()
@@ -67,7 +76,7 @@ fun LoginScreen() {
 
     Surface(Modifier.fillMaxSize()) {
         Column(
-            Modifier.systemBarsPadding().imePadding().padding(24.dp),
+            Modifier.systemBarsPadding().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp, androidx.compose.ui.Alignment.CenterVertically),
         ) {
             Text("PKD", style = MaterialTheme.typography.headlineLarge)
@@ -81,6 +90,23 @@ fun LoginScreen() {
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri),
                 modifier = Modifier.fillMaxWidth(),
             )
+            if (fixedUrl == null && challenge == null) {
+                Text(
+                    "Cloudflare Access (opcional): o Service Token do PKD.",
+                    color = MaterialTheme.colorScheme.onSurfaceVariant, style = MaterialTheme.typography.bodySmall,
+                )
+                OutlinedTextField(
+                    value = cfId, onValueChange = { cfId = it }, singleLine = true,
+                    label = { Text("CF-Access-Client-Id") }, modifier = Modifier.fillMaxWidth(),
+                )
+                OutlinedTextField(
+                    value = cfSecret, onValueChange = { cfSecret = it }, singleLine = true,
+                    label = { Text("CF-Access-Client-Secret") },
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
             if (challenge == null) {
                 OutlinedTextField(
                     value = password, onValueChange = { password = it },

@@ -32,6 +32,10 @@ object Api {
             c.instanceFollowRedirects = false
             c.setRequestProperty("Accept", "application/json")
             Session.cookieHeader().takeIf { it.isNotEmpty() }?.let { c.setRequestProperty("Cookie", it) }
+            Session.cfAccess?.let { (id, secret) ->
+                c.setRequestProperty("CF-Access-Client-Id", id)
+                c.setRequestProperty("CF-Access-Client-Secret", secret)
+            }
             if (method != "GET") Session.csrf()?.let { c.setRequestProperty("X-CSRF-Token", it) }
             if (body != null) {
                 c.doOutput = true
@@ -43,6 +47,8 @@ object Api {
             if (setCookies.isNotEmpty()) Session.store(setCookies)
             val text = (if (code >= 400) c.errorStream else c.inputStream)?.bufferedReader()?.use { it.readText() }.orEmpty()
             if (code == 401 && !path.startsWith("/api/login")) Session.expire()
+            // Cloudflare Access answers 302 to its login page when the Service Token is missing or wrong.
+            if (code in 300..399) throw ApiException(code, "O Cloudflare Access recusou o pedido. Confira o Service Token.")
             if (code >= 400) throw ApiException(code, text.trim().ifEmpty { "HTTP $code" })
             text
         } finally {

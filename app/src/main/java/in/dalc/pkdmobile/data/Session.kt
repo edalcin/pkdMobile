@@ -41,11 +41,21 @@ object Session {
             o.keys().forEach { cookies[it] = o.getString(it) }
         }
         loggedIn = "pkd_session" in cookies
+        prefs.getString("cf_access", null)?.let { runCatching { JSONObject(decrypt(it)) }.getOrNull() }?.let {
+            cfAccess = it.getString("id") to it.getString("secret")
+        }
     }
 
-    fun setUrl(url: String) {
+    /** Cloudflare Access Service Token (`CF-Access-Client-Id`/`-Secret`) in front of the PKD; null = no Access. */
+    var cfAccess: Pair<String, String>? = null
+        private set
+
+    fun setServer(url: String, cf: Pair<String, String>?) {
         baseUrl = url
-        prefs.edit().putString("url", url).apply()
+        cfAccess = cf
+        prefs.edit().putString("url", url)
+            .putString("cf_access", cf?.let { encrypt(JSONObject().put("id", it.first).put("secret", it.second).toString()) })
+            .apply()
     }
 
     @Synchronized fun cookieHeader(): String = cookies.entries.joinToString("; ") { "${it.key}=${it.value}" }
@@ -69,6 +79,7 @@ object Session {
     @Synchronized fun clear() {
         cookies.clear()
         baseUrl = null
+        cfAccess = null
         prefs.edit().clear().apply()
         loggedIn = false
     }
