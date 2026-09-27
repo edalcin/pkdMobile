@@ -67,7 +67,8 @@ abstract class PkdDb : RoomDatabase() {
     abstract fun dao(): NoteDao
 }
 
-fun htmlToText(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT).toString().trim()
+// U+FFFC is the placeholder Html.fromHtml leaves for <img>; the card shows it as a box.
+fun htmlToText(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT).toString().replace("\uFFFC", "").trim()
 
 /** Plain text → one `<p>` per line. ponytail: rich formatting from the PWA is lost when the app edits the Nota. */
 fun textToHtml(text: String): String = text.lines().joinToString("") { "<p>${TextUtils.htmlEncode(it)}</p>" }
