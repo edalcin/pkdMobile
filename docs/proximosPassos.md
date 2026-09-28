@@ -8,9 +8,9 @@ Atualizado em 2026-09-28.
   - Spec da v1: [`docs/spec-v1.md`](spec-v1.md).
   - ADR da stack: [`docs/adr/0001-stack-kotlin-compose.md`](adr/0001-stack-kotlin-compose.md).
   - Mapa e tickets: `docs/wayfinder/`.
-- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `e16e73d`, com `GET /api/notes` e `GET /api/memories` completos).
+- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `9d56195`, com `GET /api/notes` e `GET /api/memories` completos e `/api/capture` com tags do pedido).
   - "Encerrar as outras sessões" (`POST /api/sessions/revoke-others` + botão em Administração → Sessões).
-  - `/api/capture` cria **Nota** `#captura` e aceita `idempotency_key`.
+  - `/api/capture` cria **Nota** e aceita `idempotency_key`. Tag: as `tags` do pedido (o app manda `#android`), ou `#captura` sem elas (PWA).
   - O share da PWA funciona: sem `X-CSRF-Token` quando `Sec-Fetch-Site` é `none`/`same-origin`, e responde `303` para a Nota. Testado no celular.
 - **App `v0.2.0`: slices 1 + 2 feitos** (login + sessão, cache Room + Notas). Testado no emulador contra um PKD local:
   - Login com URL + senha; 2FA por e-mail (tela pronta, **não testada**: o PKD local não manda e-mail).
@@ -74,7 +74,7 @@ Atualizado em 2026-09-28.
   - **"Nova tag" com lista das Tags existentes:** o campo de texto livre virou um campo com sugestões (cache local de `GET /api/tags`, que agora traz `count`); filtro sem acento/maiúsculas, Tags já postas ficam escondidas, ordem = mais usada primeiro; última linha `Criar «texto»` quando não há Tag igual. Testado: sugestão `#pessoal (1)` e `Criar «pe»` ao digitar "pe".
   - **Share `#android`:** `Notes.capture` manda `tags: ["android"]` para `/api/capture` (que agora usa as tags do pedido em vez de `#captura` fixo — mudança no PKD, `handlers_capture.go`); o bottom sheet mostra "Nova Nota #android". Testado: Nota criada com a Tag `android` só (confirmado no `GET /api/notes` do PKD).
   - Room versão 5, migração real 4→5 (`ALTER TABLE tags ADD COLUMN count`).
-  - **Pendente antes do release:** o PKD de produção precisa do deploy da mudança em `handlers_capture.go` (ver "Deploy do PKD" nesta página) — sem ele, `/api/capture` do app continua pondo `#captura` em vez de `#android`.
+  - PKD em produção com a mudança de `/api/capture` (`9d56195`, deploy de 2026-09-28). Tag `v0.9.0` publicada no mesmo dia.
 
 ## Próxima ação (retomar daqui)
 
@@ -83,10 +83,12 @@ Atualizado em 2026-09-28.
 Teste no celular (2026-09-28): **ok** em todo o checklist. Nome "pkdMobile" fica.
 
 **Ajustes pedidos (2026-09-28):**
-1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research do bundle disparado; depois, prototype e ADR.
+1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research do bundle fechado; próximo: prototype, depois ADR.
 2. ~~**Apagar Nota com confirmação**~~ (feito na v0.9.0): `DELETE /api/documents/{id}` pela fila de envio, `AlertDialog` de confirmação.
 3. ~~**"Nova tag" com lista das Tags existentes**~~ (feito na v0.9.0): sugestões do cache local de `GET /api/tags`, ordenadas por uso.
-4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + mudança no PKD, `handlers_capture.go`): falta o deploy em produção antes do release do app (ver "Deploy do PKD").
+4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + PKD `9d56195` em produção).
+
+Ao retomar: perguntar o resultado da `v0.9.0` no celular (apagar, sugestões de Tag, share `#android`). Depois, o ticket **Como o editor se comporta no celular?** (prototype) do mapa do editor.
 
 Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 
