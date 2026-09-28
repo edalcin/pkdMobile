@@ -46,9 +46,6 @@ data class NoteEntity(
 ) {
     fun tagList(): List<String> = if (tags.isEmpty()) emptyList() else tags.split(TAG_SEP)
 
-    /** The app edits a Nota as plain text: 1st line = title, the rest = body. */
-    fun text(): String = listOf(title, htmlToText(bodyHtml)).filter { it.isNotEmpty() }.joinToString("\n")
-
     /** The cache shows an edit at once, before the PKD has it. */
     fun with(fields: JSONObject) = copy(
         title = fields.optString("title", title),
@@ -104,12 +101,15 @@ data class OutboxEntity(
 ) {
     private val json get() = JSONObject(body)
 
-    /** Title + body, when the item has them (a create, or a text edit). */
+    /** Title + body (plain text), for Copiar and the card in Não enviados. */
     fun noteText(): String? = json.optString("title").ifEmpty { null }?.let { title ->
         listOf(title, htmlToText(json.optString("content"))).filter { it.isNotEmpty() }.joinToString("\n")
     }
 
-    /** Recriar opens the "Nova Nota" sheet, so only Nota items with text can use it (not a delete). */
+    /** Título + HTML do corpo (create/capture), para pré-encher o editor rico do Recriar. */
+    fun noteFields(): Pair<String, String>? = json.optString("title").ifEmpty { null }?.let { it to json.optString("content") }
+
+    /** Recriar abre o editor rico, então só itens de Nota com título têm isso (não um delete). */
     fun isNote() = kind != "memory" && kind != "delete"
 
     fun describe(): String = listOfNotNull(
@@ -226,16 +226,20 @@ private val MIGRATION_2_3 = object : Migration(2, 3) {
 // U+FFFC is the placeholder Html.fromHtml leaves for <img>; the card shows it as a box.
 fun htmlToText(html: String): String = Html.fromHtml(html, Html.FROM_HTML_MODE_COMPACT).toString().replace("\uFFFC", "").trim()
 
-/** Plain text → one `<p>` per line. ponytail: rich formatting from the PWA is lost when the app edits the Nota. */
+/** Plain text → one `<p>` per line (share and Memória details; Notas use the rich editor). */
 fun textToHtml(text: String): String = text.lines().joinToString("") { "<p>${TextUtils.htmlEncode(it)}</p>" }
 
-/** Plain text → PKD fields (1st line = title), or null when the 1st line is empty. */
-fun textToFields(text: String): JSONObject? {
-    val lines = text.trim().lines()
-    val title = lines.first().trim().ifEmpty { return null }
-    val rest = lines.drop(1).joinToString("\n").trim('\n')
-    return JSONObject().put("title", title).put("content", if (rest.isBlank()) "" else textToHtml(rest))
+/** Title from the body's plain text (ADR 0002): first ~60 chars at a word boundary, for a Nota created without one. */
+fun deriveTitle(html: String): String {
+    val text = htmlToText(html).replace(Regex("\\s+"), " ").trim()
+    if (text.length <= 60) return text
+    val cut = text.take(60)
+    val lastSpace = cut.lastIndexOf(' ')
+    return (if (lastSpace > 20) cut.take(lastSpace) else cut).trim()
 }
+
+/** Nothing to create when both are empty (ADR 0002: "corpo e título vazios: a Nota não é criada"). */
+fun hasContent(title: String, html: String) = title.isNotBlank() || htmlToText(html).isNotBlank()
 
 private fun JSONArray.strings(): List<String> = List(length()) { getString(it) }
 
@@ -327,9 +331,11 @@ object Notes {
         flush()
     }
 
-    /** New Nota from plain text; returns false when the 1st line (title) is empty. */
-    suspend fun create(text: String): Boolean {
-        val fields = textToFields(text) ?: return false
+    /** New Nota from the rich editor (ADR 0002): title typed or derived from the body; false when both are empty. */
+    suspend fun createRich(typedTitle: String, html: String): Boolean {
+        if (!hasContent(typedTitle, html)) return false
+        val body = if (htmlToText(html).isBlank()) "" else html
+        val fields = JSONObject().put("title", typedTitle.trim().ifEmpty { deriveTitle(body) }).put("content", body)
         val tempId = minOf(dao.minId() ?: 0, 0) - 1
         val now = Instant.now().toString()
         dao.upsert(NoteEntity(tempId, "", "", "", false, now, now).with(fields))

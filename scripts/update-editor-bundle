@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+# Rebuilds the editor bundle from the pkd repo and vendors it into
+# app/src/main/assets/editor/ (ADR 0002). Works in Git Bash on Windows too.
+#
+# Usage: scripts/update-editor-bundle
+# Env:   PKD_DIR=/path/to/pkd  (default: ../pkd next to this repo)
+set -euo pipefail
+
+repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+pkd_dir="${PKD_DIR:-$repo_root/../pkd}"
+assets_dir="$repo_root/app/src/main/assets/editor"
+
+if [ ! -d "$pkd_dir/frontend" ]; then
+  echo "PKD frontend not found at $pkd_dir/frontend (set PKD_DIR)." >&2
+  exit 1
+fi
+
+echo "Building editor bundle in $pkd_dir/frontend ..."
+( cd "$pkd_dir/frontend" && npm run build:editor )
+
+rm -rf "$assets_dir"
+mkdir -p "$assets_dir"
+cp -r "$pkd_dir/frontend/dist-editor/." "$assets_dir/"
+
+sha="$(git -C "$pkd_dir" rev-parse HEAD)"
+if ! git -C "$pkd_dir" diff --quiet HEAD --; then
+  sha="$sha-dirty"
+fi
+echo "$sha" > "$repo_root/PKD_SHA"
+
+echo "Vendored $pkd_dir @ $sha into $assets_dir"

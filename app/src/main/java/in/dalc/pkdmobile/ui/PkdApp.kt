@@ -69,9 +69,28 @@ fun PkdApp() {
             modifier = Modifier.padding(scaffoldPadding),
         ) {
             composable(PkdTab.Notas.route) {
-                NotesScreen(onOpen = { navController.navigate("nota/$it") }, onUnsent = { navController.navigate("naoenviados") })
+                NotesScreen(
+                    onOpen = { navController.navigate("nota/$it") },
+                    onUnsent = { navController.navigate("naoenviados") },
+                    onNewNote = { navController.navigate("novanota") },
+                )
             }
-            composable("naoenviados") { UnsentScreen(onBack = { navController.popBackStack() }) }
+            composable("novanota") {
+                NewNoteScreen(
+                    initialTitle = "", initialHtml = "<p></p>", autoFocusBody = true,
+                    onBack = { navController.popBackStack() },
+                    onSaved = { navController.popBackStack() },
+                )
+            }
+            composable("naoenviados") {
+                UnsentScreen(
+                    onBack = { navController.popBackStack() },
+                    onRecriar = { seq -> navController.navigate("recriar/$seq") },
+                )
+            }
+            composable("recriar/{seq}", arguments = listOf(navArgument("seq") { type = NavType.LongType })) {
+                RecriarScreen(it.arguments!!.getLong("seq"), onBack = { navController.popBackStack() })
+            }
             composable(PkdTab.Memorias.route) { MemoriesScreen(onOpen = { navController.navigate("memoria/$it") }) }
             composable(PkdTab.Documentos.route) { DocumentsScreen(onOpen = { navController.navigate("documento/$it") }) }
             composable(PkdTab.Busca.route) {
@@ -94,7 +113,12 @@ fun PkdApp() {
                 )
             }
             composable("nota/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
-                NoteDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
+                NoteDetailScreen(
+                    it.arguments!!.getLong("id"),
+                    onBack = { navController.popBackStack() },
+                    onOpenDoc = { id -> navController.navigate("documento/$id") },
+                    onOpenNote = { id -> navController.navigate("nota/$id") },
+                )
             }
             composable("memoria/{id}", arguments = listOf(navArgument("id") { type = NavType.LongType })) {
                 MemoryDetailScreen(it.arguments!!.getLong("id"), onBack = { navController.popBackStack() })
