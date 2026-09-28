@@ -8,7 +8,7 @@ Atualizado em 2026-09-28.
   - Spec da v1: [`docs/spec-v1.md`](spec-v1.md).
   - ADR da stack: [`docs/adr/0001-stack-kotlin-compose.md`](adr/0001-stack-kotlin-compose.md).
   - Mapa e tickets: `docs/wayfinder/`.
-- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `8ec4cfc`, com `GET /api/notes` e `GET /api/memories` completos, `/api/capture` com tags do pedido e chi `v5.3.0`, sem os achados do `govulncheck`).
+- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `3f65b66`, com `GET /api/notes`/`GET /api/memories` completos, `/api/capture` com tags do pedido, chi `v5.3.0`, e os pré-requisitos do editor rico do ADR 0002).
   - "Encerrar as outras sessões" (`POST /api/sessions/revoke-others` + botão em Administração → Sessões).
   - `/api/capture` cria **Nota** e aceita `idempotency_key`. Tag: as `tags` do pedido (o app manda `#android`), ou `#captura` sem elas (PWA).
   - O share da PWA funciona: sem `X-CSRF-Token` quando `Sec-Fetch-Site` é `none`/`same-origin`, e responde `303` para a Nota. Testado no celular.
@@ -76,19 +76,39 @@ Atualizado em 2026-09-28.
   - Room versão 5, migração real 4→5 (`ALTER TABLE tags ADD COLUMN count`).
   - PKD em produção com a mudança de `/api/capture` (`9d56195`, deploy de 2026-09-28). Tag `v0.9.0` publicada no mesmo dia.
 
+- **PKD `3f65b66` em produção (2026-09-28): pré-requisitos do ADR 0002 feitos.** Testado pelo subagente com o PKD local e um navegador real:
+  - `frontend/src/lib/editor/extensions.js` (`buildExtensions`): uma lista de extensões TipTap para a PWA e para o bundle mobile.
+  - `DocLink` com `onOpen` injetável; busca `[[` injetável; Mermaid com `import()` dinâmico.
+  - Bundle mobile: `cd ../pkd/frontend && npm run build:editor` → `frontend/dist-editor/` (`vite.editor.config.js`, `base: './'`). ~151 KB gzip sem Mermaid.
+  - API da página: `window.pkdEditor.setContent(html)` / `getHTML()` / `command(h1|h2|h3|bullet|ordered|task|bold|italic|link|undo|redo)` / `setTheme('light'|'dark')` / `setEditable(bool)`. Callbacks na interface JS `AndroidEditor`: `onChange(html)` (toda transação), `onState(json)`, `onOpenLink(url)`, `onOpenDoc(id)`, `onReady()`, `onLossCheck({ok, details})`. O balão "Abrir · Editar · Remover" e o `inputmode="none"` ficam dentro da página.
+  - Checagem de perda: após `setContent`, compara texto e histograma de tags; se perde algo, `setEditable(false)` e `onLossCheck({ok:false})`.
+  - `SanitizeEditorHTML` aceita `text-align` em `p`/`h1–h6` e `colspan`/`rowspan` inteiros (teste em `internal/security/sanitize_test.go`). O alinhamento agora sobrevive ao save na PWA.
+
 ## Próxima ação (retomar daqui)
 
-**A v1 está completa** (spec §2–§6) e a **`v0.8.0` está instalada no celular** (Obtainium, 2026-09-27). Decisão do usuário (2026-09-27): **sem biometria**. Sem ela, a tela de Configurações teria só logout e Não enviados, que já ficam na barra de Notas; por isso não há tela de Configurações.
+Sessão encerrada pelo usuário em 2026-09-28 (créditos). Estado:
 
-Teste no celular (2026-09-28): **ok** em todo o checklist. Nome "pkdMobile" fica.
+- `v0.9.0` publicada e **testada no celular: ok**. Nome "pkdMobile" fica. Sem biometria, sem tela de Configurações.
+- Mapa do editor rico: **destino alcançado** → [ADR 0002](adr/0002-editor-rico-webview-tiptap.md). Mapa: [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md).
+- PKD: pré-requisitos do ADR 0002 **em produção** (`3f65b66`).
+- **App (slice do editor rico → `v0.10.0`): EM ANDAMENTO, interrompido no meio. Trabalho parcial SEM COMMIT na working tree** (não testado, não compilado com certeza):
+  - novos: `scripts/update-editor-bundle`, `PKD_SHA` (= `3f65b66…`), `app/src/main/assets/editor/` (bundle vendorizado), `app/src/main/java/in/dalc/pkdmobile/ui/NoteEditor.kt`;
+  - modificados: `app/build.gradle.kts`, `gradle/libs.versions.toml` (provavelmente `androidx.webkit` para `WebViewAssetLoader`), `app/proguard-rules.pro` (keep de `@JavascriptInterface`), `data/Notes.kt`, `ui/NotesScreens.kt`, `ui/PkdApp.kt`.
 
-**Ajustes pedidos (2026-09-28):**
-1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md) **chegou ao destino** — [ADR 0002](adr/0002-editor-rico-webview-tiptap.md) (2026-09-28). Falta implementar: primeiro os 4 pré-requisitos no PKD (entrada `editor.html`/`mountEditor`, `DocLink.onOpen`, Mermaid lazy, sanitizer com `text-align`/`colspan`), depois o slice no app.
-2. ~~**Apagar Nota com confirmação**~~ (feito na v0.9.0): `DELETE /api/documents/{id}` pela fila de envio, `AlertDialog` de confirmação.
-3. ~~**"Nova tag" com lista das Tags existentes**~~ (feito na v0.9.0): sugestões do cache local de `GET /api/tags`, ordenadas por uso.
-4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + PKD `9d56195` em produção).
-
-Testes da `v0.9.0` no celular: **ok** (2026-09-28). Ao retomar: implementar o ADR 0002 (PKD primeiro, depois o app → `v0.10.0`).
+**Ao retomar:**
+1. `git status` + `git diff` no pkdMobile: revisar o trabalho parcial contra o ADR 0002. Continuar a partir dele (ou descartar com `git checkout . && git clean -fd app/src/main/assets/editor scripts PKD_SHA app/src/main/java/in/dalc/pkdmobile/ui/NoteEditor.kt` e refazer).
+2. Terminar o slice. Especificação completa (a mesma dada ao subagente):
+   - Composable do editor: `TextField` de título + WebView do bundle (`WebViewAssetLoader` em `https://appassets.androidplatform.net/assets/editor/editor.html` se o `file://` bloquear módulos ES); JS ligado só nesta WebView; `addJavascriptInterface(AndroidEditor)`; navegação externa bloqueada.
+   - Barra nativa Compose (Boxicons, rolagem horizontal) acima do teclado, com estado de `onState`. Raiz com `statusBarsPadding()` + `imePadding()`. Tema via `setTheme`.
+   - `onChange` → estado `lastHtml`; salvar como hoje (1 s de debounce + `onDispose` → `Notes.edit` → fila de envio). `setContent` só depois de `onReady`; não recarregar do cache durante a edição.
+   - `onOpenLink` → navegador; `onOpenDoc(id)` → Nota do cache ou detalhe do Documento.
+   - `onLossCheck` não ok → banner "Esta Nota tem conteúdo que o app ainda não edita. Edite na PWA.", barra desligada, **nunca salvar**.
+   - Título: criação sem título → primeiras ~60 letras do texto do corpo; título e corpo vazios → não cria; depois da criação, nunca mandar título vazio.
+   - Onde: detalhe da Nota, FAB "Nova Nota", "Recriar" em Não enviados. Share continua texto simples.
+   - Remover o caminho `textToHtml`/`htmlToText` de edição que ficar morto.
+3. Verificar: `lintDebug assembleDebug` (e R8 do release); smoke no emulador contra PKD local — Nota rica da PWA preserva tabela/checklist/DocLink/alinhamento após editar; barra; link sem teclado → Abrir; DocLink → app; FAB sem título; offline → fila; `<details>` → só leitura sem PATCH; tema escuro.
+4. Docs: bullet `v0.10.0` em "Onde estamos"; tirar "edita como texto simples" dos limites; em "Como trabalhar", como atualizar o bundle (`scripts/update-editor-bundle`).
+5. Commit + `git tag v0.10.0` → Obtainium → teste no celular.
 
 Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 
