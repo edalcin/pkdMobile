@@ -1,0 +1,111 @@
+/* PROTOTYPE CSS — hand-written per docs/research/bundle-editor.md §1 (the PWA's 1250-line
+   Editor.svelte stylesheet isn't mechanically extractable). Tokens mirror
+   app/src/main/java/in/dalc/pkdmobile/ui/theme/Color.kt so the WebView matches the rest of the app. */
+
+:root {
+  --bg: #f8f8f8;
+  --panel: #ffffff;
+  --border: #e0e0e0;
+  --text: #1a1a1a;
+  --muted: #6b7280;
+  --accent: #4f46e5;
+  --accent-bg: #e8e4fd;
+}
+html[data-theme='dark'] {
+  --bg: #111111;
+  --panel: #1c1c1e;
+  --border: #3a3a3c;
+  --text: #f2f2f7;
+  --muted: #8e8e93;
+  --accent: #818cf8;
+  --accent-bg: #2d2b5e;
+}
+
+/* Author `display: flex` below otherwise beats the UA stylesheet's [hidden]{display:none}
+   regardless of selector specificity (origin order, not specificity, decides that fight) —
+   #web-toolbar/.bubble/.prompt-overlay all set an explicit display, so without this override
+   they'd stay visible even with the `hidden` IDL attribute set from JS. */
+[hidden] { display: none !important; }
+
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; background: var(--bg); color: var(--text); }
+body {
+  font-family: -apple-system, Roboto, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  -webkit-tap-highlight-color: transparent;
+}
+body.has-web-toolbar #editor-root { padding-bottom: 72px; }
+
+#editor-root { padding: 12px 16px 24px; min-height: 100vh; }
+.ProseMirror { outline: none; }
+.ProseMirror p { margin: 0 0 0.6em; }
+.ProseMirror h1, .ProseMirror h2, .ProseMirror h3 { margin: 0.8em 0 0.3em; line-height: 1.25; }
+.ProseMirror h1 { font-size: 1.6em; }
+.ProseMirror h2 { font-size: 1.35em; }
+.ProseMirror h3 { font-size: 1.15em; }
+.ProseMirror ul, .ProseMirror ol { padding-left: 1.4em; margin: 0 0 0.6em; }
+.ProseMirror a { color: var(--accent); text-decoration: underline; }
+
+/* Checklist (TaskList/TaskItem) */
+.ProseMirror ul[data-type='taskList'] { list-style: none; padding-left: 0; }
+.ProseMirror li[data-type='taskItem'] { display: flex; align-items: flex-start; gap: 0.5em; margin: 0.2em 0; }
+.ProseMirror li[data-type='taskItem'] > label { display: flex; padding-top: 0.2em; }
+.ProseMirror li[data-type='taskItem'] > div > p { margin: 0; }
+.ProseMirror li[data-type='taskItem'][data-checked='true'] > div { color: var(--muted); text-decoration: line-through; }
+.ProseMirror ul[data-type='taskList'] ul[data-type='taskList'] { margin-left: 0.4em; }
+
+/* Table */
+.ProseMirror table { border-collapse: collapse; width: 100%; margin: 0.6em 0; }
+.ProseMirror td, .ProseMirror th { border: 1px solid var(--border); padding: 6px 8px; text-align: left; }
+.ProseMirror th { background: var(--bg); font-weight: 600; }
+
+/* Highlight */
+.ProseMirror mark { background: #fef08a; padding: 0 0.15em; border-radius: 2px; }
+html[data-theme='dark'] .ProseMirror mark { background: #a16207; color: #111; }
+
+/* DocLink */
+.ProseMirror .doc-link { background: var(--accent-bg); color: var(--accent); padding: 0 0.4em; border-radius: 4px; cursor: pointer; font-weight: 500; }
+.ProseMirror .doc-link.broken { text-decoration: line-through; opacity: 0.6; }
+
+/* Image (ResizableImage) */
+.ProseMirror img { max-width: 100%; height: auto; border-radius: 4px; }
+.ProseMirror .resizable-image-wrapper { display: inline-block; position: relative; max-width: 100%; vertical-align: bottom; }
+.ProseMirror .resizable-image-handle { position: absolute; right: -4px; bottom: -4px; width: 14px; height: 14px; background: var(--accent); border-radius: 50%; }
+
+/* Mermaid block */
+.ProseMirror .mermaid-block { border: 1px solid var(--border); border-radius: 6px; padding: 0.5em; margin: 0.6em 0; background: var(--panel); }
+.ProseMirror .mermaid-toggle { border: none; background: var(--bg); color: var(--muted); border-radius: 4px; padding: 2px 8px; margin-bottom: 0.4em; font-family: monospace; }
+.ProseMirror .mermaid-source { display: none; background: var(--bg); border-radius: 4px; padding: 0.4em; overflow-x: auto; }
+.ProseMirror .mermaid-open .mermaid-source { display: block; }
+.ProseMirror .mermaid-stub, .ProseMirror .mermaid-empty { white-space: pre-wrap; font-family: ui-monospace, monospace; font-size: 0.9em; color: var(--muted); }
+
+/* Web toolbar (variant B) */
+#web-toolbar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20;
+  display: flex; gap: 2px; overflow-x: auto; padding: 6px 8px;
+  background: var(--panel); border-top: 1px solid var(--border);
+}
+.toolbar-btn {
+  flex: 0 0 auto; min-width: 40px; height: 40px; border: none; background: transparent;
+  border-radius: 8px; font-size: 15px; color: var(--text);
+}
+.toolbar-btn.active { background: var(--accent-bg); color: var(--accent); }
+
+/* Link bubble */
+.bubble {
+  position: fixed; z-index: 30; display: flex; align-items: center; gap: 2px;
+  background: var(--panel); border: 1px solid var(--border); border-radius: 8px;
+  padding: 4px 6px; box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2); font-size: 13px;
+}
+.bubble button { background: none; border: none; color: var(--accent); padding: 4px 6px; font-size: 13px; font-weight: 500; }
+.bubble-sep { color: var(--muted); }
+
+/* URL prompt overlay */
+.prompt-overlay { position: fixed; inset: 0; z-index: 50; background: rgba(0, 0, 0, 0.4); display: flex; align-items: center; justify-content: center; }
+.prompt-box { background: var(--panel); border-radius: 10px; padding: 16px; width: min(320px, 88vw); display: flex; flex-direction: column; gap: 8px; }
+.prompt-box label { font-size: 13px; color: var(--muted); }
+.prompt-box input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text); font-size: 15px; }
+.prompt-actions { display: flex; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+.prompt-actions button { padding: 7px 14px; border-radius: 6px; border: none; background: var(--accent-bg); color: var(--accent); font-size: 14px; }
+#prompt-ok { background: var(--accent); color: #fff; }

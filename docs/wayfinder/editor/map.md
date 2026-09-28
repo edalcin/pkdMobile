@@ -30,12 +30,11 @@ Decisões de charting (2026-09-28, com o usuário):
 
 <!-- uma linha por ticket fechado -->
 - [Como o PKD gera um bundle do editor para o app?](tickets/01-bundle-editor.md): extensões TipTap são vanilla JS reaproveitáveis; bundle vira 2ª entrada HTML no Vite com Mermaid lazy; entrega/versão via checkout do `pkd` no CI do `pkdMobile` pinado na tag `:stable`; `SanitizeEditorHTML` hoje perde alinhamento de texto e merge de célula de tabela.
+- [Como o editor se comporta no celular?](tickets/02-prototype-editor.md): barra nativa Compose acima do teclado; DocLink só mostra o balão ("Abrir" abre no app, `onOpen` injetável); teclado não sobe ao tocar num link; edge-to-edge exige `statusBarsPadding` + `imePadding` na raiz; bundle 148 KB gzip.
 
 ## Not yet specified
 
-- Ponte Kotlin ↔ JS: como o HTML entra e sai da WebView, o salvamento automático (debounce) e a entrada na fila de envio; o que acontece se a WebView morre com mudanças não salvas.
-- Tema claro/escuro e fontes do editor iguais ao resto do app; comportamento com o teclado (a barra acima dele, rolagem até o cursor).
-- Links internos (`DocLink`) no balão "Abrir": abrir o Documento ou a Nota no app, ou só o link externo.
+(vazio: a ponte Kotlin ↔ JS e o salvamento na fila de envio ficam no ticket **Qual é o ADR do editor rico?**)
 
 ## Out of scope
 

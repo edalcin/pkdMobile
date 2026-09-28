@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<!-- PROTOTYPE — throwaway (ticket 02-prototype-editor.md). Loaded either as a plain file for
+     desktop preview or from file:///android_asset/editor-prototype/ inside the app's WebView. -->
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<title>Editor (protótipo)</title>
+<script>
+  // Applied before first paint so there's no light->dark flash. The Activity passes ?theme=.
+  document.documentElement.dataset.theme = new URLSearchParams(location.search).get('theme') === 'dark' ? 'dark' : 'light'
+</script>
+<link rel="stylesheet" href="./editor-prototype.css" />
+</head>
+<body>
+  <div id="editor-root"></div>
+
+  <div id="web-toolbar" hidden>
+    <button data-cmd="h1" class="toolbar-btn" title="Título 1">H1</button>
+    <button data-cmd="h2" class="toolbar-btn" title="Título 2">H2</button>
+    <button data-cmd="h3" class="toolbar-btn" title="Título 3">H3</button>
+    <button data-cmd="bullet" class="toolbar-btn" title="Lista com marcadores">&#9776;</button>
+    <button data-cmd="ordered" class="toolbar-btn" title="Lista numerada">1.</button>
+    <button data-cmd="task" class="toolbar-btn" title="Checklist">&#9745;</button>
+    <button data-cmd="bold" class="toolbar-btn" title="Negrito"><b>B</b></button>
+    <button data-cmd="italic" class="toolbar-btn" title="Itálico"><i>I</i></button>
+    <button data-cmd="link" class="toolbar-btn" title="Link">&#128279;</button>
+    <button data-cmd="undo" class="toolbar-btn" title="Desfazer">&#8617;</button>
+    <button data-cmd="redo" class="toolbar-btn" title="Refazer">&#8618;</button>
+  </div>
+
+  <div id="link-bubble" class="bubble" hidden>
+    <button id="bubble-open" type="button">Abrir</button>
+    <span class="bubble-sep">&middot;</span>
+    <button id="bubble-edit" type="button">Editar</button>
+    <span class="bubble-sep">&middot;</span>
+    <button id="bubble-remove" type="button">Remover</button>
+  </div>
+
+  <div id="prompt-overlay" class="prompt-overlay" hidden>
+    <div class="prompt-box">
+      <label for="prompt-input">Endereço do link</label>
+      <input id="prompt-input" type="url" placeholder="https://…" autocapitalize="off" autocorrect="off" />
+      <div class="prompt-actions">
+        <button id="prompt-cancel" type="button">Cancelar</button>
+        <button id="prompt-ok" type="button">OK</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="./editor-prototype.js"></script>
+</body>
+</html>

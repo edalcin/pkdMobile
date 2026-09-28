@@ -83,12 +83,12 @@ Atualizado em 2026-09-28.
 Teste no celular (2026-09-28): **ok** em todo o checklist. Nome "pkdMobile" fica.
 
 **Ajustes pedidos (2026-09-28):**
-1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research do bundle fechado; próximo: prototype, depois ADR.
+1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research e prototype fechados (2026-09-28); próximo: ticket **Qual é o ADR do editor rico?** (grilling).
 2. ~~**Apagar Nota com confirmação**~~ (feito na v0.9.0): `DELETE /api/documents/{id}` pela fila de envio, `AlertDialog` de confirmação.
 3. ~~**"Nova tag" com lista das Tags existentes**~~ (feito na v0.9.0): sugestões do cache local de `GET /api/tags`, ordenadas por uso.
 4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + PKD `9d56195` em produção).
 
-Ao retomar: perguntar o resultado da `v0.9.0` no celular (apagar, sugestões de Tag, share `#android`). Depois, o ticket **Como o editor se comporta no celular?** (prototype) do mapa do editor.
+Testes da `v0.9.0` no celular: **ok** (2026-09-28). Ao retomar: ticket **Qual é o ADR do editor rico?** do mapa do editor.
 
 Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 
