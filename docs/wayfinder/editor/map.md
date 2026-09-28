@@ -31,10 +31,11 @@ Decisões de charting (2026-09-28, com o usuário):
 <!-- uma linha por ticket fechado -->
 - [Como o PKD gera um bundle do editor para o app?](tickets/01-bundle-editor.md): extensões TipTap são vanilla JS reaproveitáveis; bundle vira 2ª entrada HTML no Vite com Mermaid lazy; entrega/versão via checkout do `pkd` no CI do `pkdMobile` pinado na tag `:stable`; `SanitizeEditorHTML` hoje perde alinhamento de texto e merge de célula de tabela.
 - [Como o editor se comporta no celular?](tickets/02-prototype-editor.md): barra nativa Compose acima do teclado; DocLink só mostra o balão ("Abrir" abre no app, `onOpen` injetável); teclado não sobe ao tocar num link; edge-to-edge exige `statusBarsPadding` + `imePadding` na raiz; bundle 148 KB gzip.
+- [Qual é o ADR do editor rico?](tickets/03-adr-editor.md): [ADR 0002](../../adr/0002-editor-rico-webview-tiptap.md) — push do HTML a cada transação, bundle vendorizado com `PKD_SHA`, sanitizer do PKD corrigido, share com texto simples, Nota só leitura se o bundle perde conteúdo. **Destino alcançado.**
 
 ## Not yet specified
 
-(vazio: a ponte Kotlin ↔ JS e o salvamento na fila de envio ficam no ticket **Qual é o ADR do editor rico?**)
+(vazio — o mapa chegou ao destino)
 
 ## Out of scope
 

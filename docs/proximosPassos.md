@@ -83,12 +83,12 @@ Atualizado em 2026-09-28.
 Teste no celular (2026-09-28): **ok** em todo o checklist. Nome "pkdMobile" fica.
 
 **Ajustes pedidos (2026-09-28):**
-1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research e prototype fechados (2026-09-28); próximo: ticket **Qual é o ADR do editor rico?** (grilling).
+1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md) **chegou ao destino** — [ADR 0002](adr/0002-editor-rico-webview-tiptap.md) (2026-09-28). Falta implementar: primeiro os 4 pré-requisitos no PKD (entrada `editor.html`/`mountEditor`, `DocLink.onOpen`, Mermaid lazy, sanitizer com `text-align`/`colspan`), depois o slice no app.
 2. ~~**Apagar Nota com confirmação**~~ (feito na v0.9.0): `DELETE /api/documents/{id}` pela fila de envio, `AlertDialog` de confirmação.
 3. ~~**"Nova tag" com lista das Tags existentes**~~ (feito na v0.9.0): sugestões do cache local de `GET /api/tags`, ordenadas por uso.
 4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + PKD `9d56195` em produção).
 
-Testes da `v0.9.0` no celular: **ok** (2026-09-28). Ao retomar: ticket **Qual é o ADR do editor rico?** do mapa do editor.
+Testes da `v0.9.0` no celular: **ok** (2026-09-28). Ao retomar: implementar o ADR 0002 (PKD primeiro, depois o app → `v0.10.0`).
 
 Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 
