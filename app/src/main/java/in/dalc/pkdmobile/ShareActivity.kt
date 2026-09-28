@@ -55,7 +55,7 @@ class ShareActivity : ComponentActivity() {
                         Modifier.padding(horizontal = 16.dp).padding(bottom = 24.dp).imePadding(),
                         verticalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text("Nova Nota #captura", style = MaterialTheme.typography.titleMedium)
+                        Text("Nova Nota #android", style = MaterialTheme.typography.titleMedium)
                         OutlinedTextField(text, { text = it }, minLines = 4, modifier = Modifier.fillMaxWidth())
                         Button(
                             onClick = {

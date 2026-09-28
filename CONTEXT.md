@@ -31,7 +31,7 @@ O PKD (Personal Knowledge Database) - @pkd/ - é uma aplicação auto-hospedada 
 | **Associações**      | Área no rodapé do documento com três colunas: Notas relacionadas, Arquivos e Links externos. |
 | **Tags**             | Marcadores com cores configuráveis. Chips coloridos na sidebar e no editor. |
 | **Graph View**       | Visualização em grafo (D3.js) de documentos, tags e hierarquia. Modo semântico exibe similaridade por embeddings. |
-| **PWA Share Target** | Envio de conteúdo de outros apps para o PKD. Na PWA e no app Android, cria uma Nota com a tag `#captura`. |
+| **PWA Share Target** | Envio de conteúdo de outros apps para o PKD. Na PWA, cria uma Nota com a tag `#captura`; no app Android, cria uma Nota com a tag `#android`. |
 | **Fila de envio**    | No app Android: Notas e Memórias criadas ou editadas sem conexão, esperando para ir ao PKD. |
 | **Não enviados**     | No app Android: itens que o PKD rejeitou ao receber a fila de envio. O usuário copia, recria ou descarta cada um. |
 

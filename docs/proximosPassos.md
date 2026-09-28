@@ -1,6 +1,6 @@
 # Próximos Passos
 
-Atualizado em 2026-09-27.
+Atualizado em 2026-09-28.
 
 ## Onde estamos
 
@@ -69,14 +69,26 @@ Atualizado em 2026-09-27.
   - Todos os Material Icons trocados; dependência `material-icons-extended` removida (APK de release: 3,4 MB).
   - Árvore: o ícone `bx-…` de cada Documento aparece; classe que não existe na 2.1.4 (ex.: `bx-sticky-note`) cai em `bx-file`.
 
+- **`v0.9.0`: 3 ajustes pedidos em 2026-09-28 feitos** (apagar Nota, tag picker, share `#android`). Testado no emulador contra um PKD local:
+  - **Apagar Nota com confirmação:** ícone `bx-trash` na barra do Detalhe da Nota; `AlertDialog` "Mover «título» para a lixeira?" (Mover/Cancelar). Vai pela fila de envio: kind `delete` → `DELETE /api/documents/{id}` (`404` conta como sucesso); Nota nunca enviada (id negativo) só sai da fila, sem pedido; edições pendentes da mesma Nota (patch/favorite/create/capture) somem. Testado: Nota já sincronizada (sai do `GET /api/notes`), offline→online (fila `1 na fila` até reconectar), Nota nunca enviada (sem pedido ao PKD, confirmado no log do servidor).
+  - **"Nova tag" com lista das Tags existentes:** o campo de texto livre virou um campo com sugestões (cache local de `GET /api/tags`, que agora traz `count`); filtro sem acento/maiúsculas, Tags já postas ficam escondidas, ordem = mais usada primeiro; última linha `Criar «texto»` quando não há Tag igual. Testado: sugestão `#pessoal (1)` e `Criar «pe»` ao digitar "pe".
+  - **Share `#android`:** `Notes.capture` manda `tags: ["android"]` para `/api/capture` (que agora usa as tags do pedido em vez de `#captura` fixo — mudança no PKD, `handlers_capture.go`); o bottom sheet mostra "Nova Nota #android". Testado: Nota criada com a Tag `android` só (confirmado no `GET /api/notes` do PKD).
+  - Room versão 5, migração real 4→5 (`ALTER TABLE tags ADD COLUMN count`).
+  - **Pendente antes do release:** o PKD de produção precisa do deploy da mudança em `handlers_capture.go` (ver "Deploy do PKD" nesta página) — sem ele, `/api/capture` do app continua pondo `#captura` em vez de `#android`.
+
 ## Próxima ação (retomar daqui)
 
 **A v1 está completa** (spec §2–§6) e a **`v0.8.0` está instalada no celular** (Obtainium, 2026-09-27). Decisão do usuário (2026-09-27): **sem biometria**. Sem ela, a tela de Configurações teria só logout e Não enviados, que já ficam na barra de Notas; por isso não há tela de Configurações.
 
-Sessão pausada pelo usuário em 2026-09-27. Ao retomar:
-1. Perguntar o resultado do teste no celular (checklist: trecho e Tags nos cartões; detalhes da Memória; imagem e **Ver** num Documento; Busca agrupada; **Compartilhar → "Nota no PKD"**). Registrar aqui os ajustes.
-2. Candidatos da v1.1 (spec §9): upload de arquivos e câmera; notificação "Neste dia".
-3. Opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
+Teste no celular (2026-09-28): **ok** em todo o checklist. Nome "pkdMobile" fica.
+
+**Ajustes pedidos (2026-09-28):**
+1. **Editor rico de Notas** (H1–H3, listas, links clicáveis): mapa em [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md), destino = ADR 0002. Research do bundle disparado; depois, prototype e ADR.
+2. ~~**Apagar Nota com confirmação**~~ (feito na v0.9.0): `DELETE /api/documents/{id}` pela fila de envio, `AlertDialog` de confirmação.
+3. ~~**"Nova tag" com lista das Tags existentes**~~ (feito na v0.9.0): sugestões do cache local de `GET /api/tags`, ordenadas por uso.
+4. ~~**Share com `#android` no lugar de `#captura`**~~ (feito na v0.9.0 + mudança no PKD, `handlers_capture.go`): falta o deploy em produção antes do release do app (ver "Deploy do PKD").
+
+Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 
 Feito em 2026-09-27: container `notas` removido do EC2. Backup em `~/docker-compose_comNotas.yml`; o serviço saiu do `docker-compose.yml` e o container parado foi removido (`docker rm notas`). Os dados (`~/notas/db`, `~/notas/files`) ficaram no disco. Reverter: `cp ~/docker-compose_comNotas.yml ~/docker-compose.yml && docker-compose up -d`.
 
@@ -114,4 +126,3 @@ Feito em 2026-09-27: container `notas` removido do EC2. Backup em `~/docker-comp
 ## Pendências menores
 
 - ~~Testar o botão **Encerrar as outras sessões**~~: o endpoint foi testado contra o PKD local (`{"revoked":2}`, e o app caiu na tela de login). Falta só o usuário ver o botão na PWA.
-- Nome do app no launcher: hoje é "pkdMobile". O usuário pode preferir "PKD" (mudança de uma linha em `strings.xml`).

@@ -59,7 +59,7 @@ data class NoteEntity(
 }
 
 @Entity(tableName = "tags")
-data class TagEntity(@PrimaryKey val name: String, val color: String, val textColor: String)
+data class TagEntity(@PrimaryKey val name: String, val color: String, val textColor: String, val count: Int = 0)
 
 /** Memória (spec §2: create and view). pos = order of GET /api/memories (newest first); negative id = still in the queue. */
 @Entity(tableName = "memories")
@@ -90,7 +90,8 @@ data class DocBodyEntity(@PrimaryKey val id: Long, val json: String, val openedA
 
 /**
  * One item of the Fila de envio (spec §5). kind: `create` (body = POST /api/notes), `patch` (body = PATCH
- * fields), `favorite` (body = {"favorite": wanted state}) or `memory` (body = POST /api/memories). failed = Não enviados.
+ * fields), `favorite` (body = {"favorite": wanted state}), `memory` (body = POST /api/memories), `capture`
+ * (body = POST /api/capture) or `delete` (body = {}, DELETE /api/documents/{id}). failed = Não enviados.
  */
 @Entity(tableName = "outbox")
 data class OutboxEntity(
@@ -108,11 +109,12 @@ data class OutboxEntity(
         listOf(title, htmlToText(json.optString("content"))).filter { it.isNotEmpty() }.joinToString("\n")
     }
 
-    /** Recriar opens the "Nova Nota" sheet, so only Nota items can use it. */
-    fun isNote() = kind != "memory"
+    /** Recriar opens the "Nova Nota" sheet, so only Nota items with text can use it (not a delete). */
+    fun isNote() = kind != "memory" && kind != "delete"
 
     fun describe(): String = listOfNotNull(
         if (kind == "memory") "Memória" else null,
+        if (kind == "delete") "Apagar" else null,
         noteText(),
         json.optJSONObject("date")?.let { d -> "Data: %02d/%02d/%d".format(d.optInt("day"), d.optInt("month"), d.optInt("year")) },
         json.optJSONArray("tags")?.let { "Tags: " + it.strings().joinToString(", ") { t -> "#$t" } },
@@ -148,6 +150,7 @@ interface NoteDao {
     @Query("SELECT COUNT(*) FROM outbox") suspend fun outboxCount(): Int
     @Query("SELECT * FROM outbox WHERE failed = 0 AND noteId = :id AND kind = :kind ORDER BY seq DESC LIMIT 1")
     suspend fun lastPending(id: Long, kind: String): OutboxEntity?
+    @Query("SELECT * FROM outbox WHERE failed = 0 AND noteId = :id") suspend fun pendingForNote(id: Long): List<OutboxEntity>
     /** null = nothing in the queue for this Nota; false = waiting; true = Não enviado. */
     @Query("SELECT failed FROM outbox WHERE noteId = :id ORDER BY seq DESC LIMIT 1") suspend fun queueState(id: Long): Boolean?
     @Insert suspend fun insertOutbox(item: OutboxEntity)
@@ -182,10 +185,17 @@ interface NoteDao {
 
 @Database(
     entities = [NoteEntity::class, TagEntity::class, OutboxEntity::class, MemoryEntity::class, DocEntity::class, DocBodyEntity::class],
-    version = 4, exportSchema = false,
+    version = 5, exportSchema = false,
 )
 abstract class PkdDb : RoomDatabase() {
     abstract fun dao(): NoteDao
+}
+
+/** v5 adds the usage count to Tags (GET /api/tags), for the tag picker's most-used-first order. */
+private val MIGRATION_4_5 = object : Migration(4, 5) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL("ALTER TABLE tags ADD COLUMN count INTEGER NOT NULL DEFAULT 0")
+    }
 }
 
 /** v4 adds the Árvore and the opened Documentos. */
@@ -255,7 +265,7 @@ object Notes {
         if (!::dao.isInitialized) {
             // v1 had only the cache, so dropping it on upgrade loses nothing; from v2 on, migrate (the outbox matters).
             dao = Room.databaseBuilder(context, PkdDb::class.java, "pkd.db")
-                .addMigrations(MIGRATION_2_3, MIGRATION_3_4)
+                .addMigrations(MIGRATION_2_3, MIGRATION_3_4, MIGRATION_4_5)
                 .fallbackToDestructiveMigrationFrom(true, 1)
                 .build().dao()
         }
@@ -277,7 +287,7 @@ object Notes {
                 )
             }
             val tags = JSONArray(Api.request("GET", "/api/tags")).objects().map {
-                TagEntity(it.getString("name"), it.optString("color"), it.optString("text_color"))
+                TagEntity(it.getString("name"), it.optString("color"), it.optString("text_color"), it.optInt("count"))
             }
             val docs = mutableListOf<DocEntity>()
             fun walk(nodes: JSONArray, parentId: Long?) {
@@ -309,8 +319,9 @@ object Notes {
         val content = if (rest.isEmpty()) "" else textToHtml(rest)
         val tempId = minOf(dao.minId() ?: 0, 0) - 1
         val now = Instant.now().toString()
-        dao.upsert(NoteEntity(tempId, title.ifEmpty { url.ifEmpty { "Captura" } }, content, "captura", false, now, now))
+        dao.upsert(NoteEntity(tempId, title.ifEmpty { url.ifEmpty { "Captura" } }, content, "android", false, now, now))
         val body = JSONObject().put("title", title).put("content", content).put("url", url)
+            .put("tags", JSONArray(listOf("android")))
             .put("idempotency_key", UUID.randomUUID().toString())
         queueLock.withLock { dao.insertOutbox(OutboxEntity(noteId = tempId, kind = "capture", body = body.toString())) }
         flush()
@@ -353,6 +364,21 @@ object Notes {
                 if (fields.length() > 0) enqueue(id, "patch", fields)
                 if (favorite != null) enqueue(id, "favorite", JSONObject().put("favorite", favorite))
             }
+        }
+        flush()
+    }
+
+    /**
+     * Apaga a Nota (fila de envio): some do cache e da lista na hora; se já foi enviada, um item
+     * `delete` vai para a fila (`DELETE /api/documents/{id}`, lixeira no PKD). Edições pendentes
+     * dessa Nota (patch/favorite/create/capture) somem — a Nota está saindo, não faz sentido mandá-las.
+     * Nota nunca enviada (id negativo): só tira da fila, sem pedido.
+     */
+    suspend fun delete(id: Long) {
+        queueLock.withLock {
+            dao.pendingForNote(id).forEach { dao.deleteOutbox(it.seq) }
+            dao.deleteNote(id)
+            if (id >= 0) dao.insertOutbox(OutboxEntity(noteId = id, kind = "delete", body = "{}"))
         }
         flush()
     }
@@ -411,6 +437,12 @@ object Notes {
                 )
             }
             "patch" -> dao.upsert(noteFromJson(JSONObject(Api.request("PATCH", "/api/notes/${item.noteId}", body))))
+            // Soft delete → lixeira no PKD. A Nota já saiu do cache em delete(); 404 (já apagada) conta como sucesso.
+            "delete" -> try {
+                Api.request("DELETE", "/api/documents/${item.noteId}")
+            } catch (e: ApiException) {
+                if (e.code != 404) throw e
+            }
             // PATCH ignores `favorite`; the PKD only toggles it, so toggle only when the state differs.
             "favorite" -> {
                 val current = JSONObject(Api.request("GET", "/api/notes/${item.noteId}"))
@@ -475,7 +507,7 @@ object Notes {
     }
 
     /** Lowercase without accents, so "memoria" finds "Memória". */
-    private fun fold(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "").lowercase()
+    fun fold(s: String) = java.text.Normalizer.normalize(s, java.text.Normalizer.Form.NFD).replace(Regex("\\p{M}"), "").lowercase()
 
     suspend fun logout() {
         runCatching { Api.request("POST", "/api/logout") }

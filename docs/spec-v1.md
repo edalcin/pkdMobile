@@ -67,10 +67,10 @@ Referência visual: [`docs/wayfinder/prototypes/01-direcao-visual.prototype.html
 
 ## 6. Share
 
-- O app recebe `ACTION_SEND` (texto/URL) e cria uma Nota com a Tag `#captura`.
+- O app recebe `ACTION_SEND` (texto/URL) e cria uma Nota com a Tag `#android`.
 - A Nota vai pela fila de envio para `POST /api/capture` com `idempotency_key`. O PKD busca o Open Graph (título) do link.
 - Offline, a Nota aparece com o link cru e ganha o título quando a fila é enviada.
-- A PWA segue a mesma regra (Nota `#captura`).
+- A PWA segue a regra antiga (Nota `#captura`); o app manda `tags: ["android"]`, que o PKD usa no lugar do `#captura` padrão (ajuste 2026-09-28).
 
 ## 7. Stack e entrega
 
@@ -90,7 +90,7 @@ As duas mudanças são aditivas e a PWA continua funcionando.
 
 - Upload de arquivos e câmera (candidato à v1.1).
 - Notificações (candidato: "Neste dia", sem backend).
-- Converter e apagar Nota (continuam na PWA).
+- Converter Nota (continua na PWA). Apagar Nota: feito no app (ajuste 2026-09-28, fora do mapa original).
 - Editar Memórias.
 - Edição rica de Documentos (TipTap).
 - Múltiplas instâncias PKD.

@@ -269,6 +269,7 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
     var text by rememberSaveable(id) { mutableStateOf(n.text()) }
     var status by remember { mutableStateOf<String?>(null) }
     var newTag by rememberSaveable(id) { mutableStateOf("") }
+    var askDelete by remember { mutableStateOf(false) }
 
     fun save(fields: JSONObject) = Notes.scope.launch {
         Notes.edit(id, fields)
@@ -287,12 +288,19 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
     LaunchedEffect(text) { delay(1_000); saveText() }
     DisposableEffect(id) { onDispose { saveText() } } // leaving before the debounce still saves
 
+    fun addTag(name: String) {
+        val clean = name.trim().removePrefix("#")
+        if (clean.isNotEmpty() && clean !in n.tagList()) save(JSONObject().put("tags", JSONArray(n.tagList() + clean)))
+        newTag = ""
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
                 title = { Text(status ?: "Nota", style = MaterialTheme.typography.titleSmall) },
                 navigationIcon = { IconButton(onClick = onBack) { Boxicons.Icon("bx-arrow-back", "Voltar") } },
                 actions = {
+                    IconButton(onClick = { askDelete = true }) { Boxicons.Icon("bx-trash", "Apagar Nota") }
                     IconButton(onClick = { save(JSONObject().put("favorite", !n.isFavorite)) }) {
                         if (n.isFavorite) Boxicons.Icon("bxs-star", "Tirar dos favoritos", tint = MaterialTheme.colorScheme.primary)
                         else Boxicons.Icon("bx-star", "Favoritar")
@@ -307,16 +315,29 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
         ) {
             val tagMap = tags.associateBy { it.name }
             TagChips(n.tagList(), tagMap) { name -> save(JSONObject().put("tags", JSONArray(n.tagList() - name))) }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = newTag, onValueChange = { newTag = it }, singleLine = true,
-                    label = { Text("Nova Tag") }, modifier = Modifier.weight(1f),
-                )
-                IconButton(onClick = {
-                    val name = newTag.trim().removePrefix("#")
-                    if (name.isNotEmpty() && name !in n.tagList()) save(JSONObject().put("tags", JSONArray(n.tagList() + name)))
-                    newTag = ""
-                }) { Boxicons.Icon("bx-plus", "Pôr Tag") }
+            OutlinedTextField(
+                value = newTag, onValueChange = { newTag = it }, singleLine = true,
+                label = { Text("Nova Tag") }, modifier = Modifier.fillMaxWidth(),
+            )
+            if (newTag.isNotBlank()) {
+                val needle = Notes.fold(newTag.trim().removePrefix("#"))
+                val existing = n.tagList().toSet()
+                val suggestions = tags.filter { it.name !in existing && Notes.fold(it.name).contains(needle) }
+                    .sortedWith(compareByDescending<TagEntity> { it.count }.thenBy { it.name })
+                val exactMatch = tags.any { Notes.fold(it.name) == needle }
+                Column {
+                    suggestions.forEach { tag ->
+                        TextButton(onClick = { addTag(tag.name) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("#${tag.name} (${tag.count})", modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                    if (!exactMatch) {
+                        val clean = newTag.trim().removePrefix("#")
+                        TextButton(onClick = { addTag(clean) }, modifier = Modifier.fillMaxWidth()) {
+                            Text("Criar «$clean»", modifier = Modifier.fillMaxWidth())
+                        }
+                    }
+                }
             }
             OutlinedTextField(
                 value = text, onValueChange = { text = it },
@@ -324,5 +345,16 @@ fun NoteDetailScreen(id: Long, onBack: () -> Unit) {
                 placeholder = { Text("1ª linha = título") },
             )
         }
+    }
+
+    if (askDelete) {
+        AlertDialog(
+            onDismissRequest = { askDelete = false },
+            title = { Text("Mover «${n.title}» para a lixeira?") },
+            confirmButton = {
+                TextButton(onClick = { askDelete = false; Notes.scope.launch { Notes.delete(id) } }) { Text("Mover") }
+            },
+            dismissButton = { TextButton(onClick = { askDelete = false }) { Text("Cancelar") } },
+        )
     }
 }
