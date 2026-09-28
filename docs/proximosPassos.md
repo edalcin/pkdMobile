@@ -8,7 +8,7 @@ Atualizado em 2026-09-28.
   - Spec da v1: [`docs/spec-v1.md`](spec-v1.md).
   - ADR da stack: [`docs/adr/0001-stack-kotlin-compose.md`](adr/0001-stack-kotlin-compose.md).
   - Mapa e tickets: `docs/wayfinder/`.
-- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `9d56195`, com `GET /api/notes` e `GET /api/memories` completos e `/api/capture` com tags do pedido).
+- **Pré-requisitos no PKD: feitos e em produção** (EC2, `pkd.dalc.in`; hoje `pkd:stable` = `8ec4cfc`, com `GET /api/notes` e `GET /api/memories` completos, `/api/capture` com tags do pedido e chi `v5.3.0`, sem os achados do `govulncheck`).
   - "Encerrar as outras sessões" (`POST /api/sessions/revoke-others` + botão em Administração → Sessões).
   - `/api/capture` cria **Nota** e aceita `idempotency_key`. Tag: as `tags` do pedido (o app manda `#android`), ou `#captura` sem elas (PWA).
   - O share da PWA funciona: sem `X-CSRF-Token` quando `Sec-Fetch-Site` é `none`/`same-origin`, e responde `303` para a Nota. Testado no celular.
