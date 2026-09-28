@@ -86,21 +86,23 @@ Atualizado em 2026-09-28.
 
 - **`v0.10.0`: editor rico de Notas (ADR 0002).** WebView com o bundle TipTap vendorizado do PKD (`app/src/main/assets/editor/`, servido por `WebViewAssetLoader` em `https://appassets.androidplatform.net/assets/editor/`), barra nativa Compose (Boxicons) acima do teclado.
   - Onde: detalhe da Nota, FAB "Nova Nota" (tela cheia, título opcional → ~60 primeiras letras do corpo; os dois vazios → não cria), "Recriar" em Não enviados. O share continua texto simples.
-  - Salvar: `onChange` → 1 s de debounce + ao sair → `Notes.edit` → fila de envio. Abrir sem editar não manda PATCH (`setContent` sem `emitUpdate`).
+  - Salvar: `onChange` → 1 s de debounce + ao sair → `Notes.edit` → fila de envio. Abrir sem editar não manda PATCH (o app ignora o `onChange` de eco do `setContent`).
   - Conteúdo que o bundle não conhece (`onLossCheck` não ok): banner "Edite na PWA", barra escondida, nunca salva.
   - Link → balão Abrir (navegador); DocLink → Nota do cache ou detalhe do Documento.
 
 ## Próxima ação (retomar daqui)
 
-Sessão encerrada pelo usuário em 2026-09-28 (créditos). Estado:
+Sessão encerrada pelo usuário em 2026-09-28. Estado:
 
 - `v0.9.0` publicada e **testada no celular: ok**. Nome "pkdMobile" fica. Sem biometria, sem tela de Configurações.
 - Mapa do editor rico: **destino alcançado** → [ADR 0002](adr/0002-editor-rico-webview-tiptap.md). Mapa: [`docs/wayfinder/editor/map.md`](wayfinder/editor/map.md).
 - PKD: pré-requisitos do ADR 0002 **em produção** (`3f65b66`).
-- **App `v0.10.0` (editor rico): smoke no emulador ok** (2026-09-28, PKD local): tabela/checklist/DocLink/alinhamento preservados após editar; abrir sem editar não manda PATCH; H2/bullet salvos; DocLink → Abrir no app; FAB sem título → título do corpo; offline → fila → enviado; conteúdo desconhecido → banner, sem PATCH; tema escuro; `assembleRelease` (R8) ok. Bug achado e corrigido: o `setContent` do bundle manda um `onChange` de eco → o `RichNoteEditor` ignora o 1º `onChange` depois de carregar HTML não vazio.
+- **App `v0.10.0` (editor rico): commit `451de0b` + tag `v0.10.0` enviados** (o CI da release estava rodando no fim da sessão). Smoke no emulador ok (2026-09-28, PKD local): tabela/checklist/DocLink/alinhamento preservados após editar; abrir sem editar não manda PATCH; H2/bullet salvos; DocLink → Abrir no app; FAB sem título → título do corpo; offline → fila → enviado; conteúdo desconhecido → banner, sem PATCH; tema escuro; `assembleRelease` (R8) ok.
+  - Bug achado e corrigido: o `setContent` do bundle manda um `onChange` de eco → o `RichNoteEditor` ignora o 1º `onChange` depois de carregar HTML não vazio. **Não testado no emulador:** Nova Nota vazia, digitar só 1 letra → o botão Salvar deve ligar.
 
 **Ao retomar:**
-1. Commit + `git tag v0.10.0` → Obtainium → teste no celular.
+1. Conferir o GitHub Release `v0.10.0` (APK assinado) → atualizar pelo Obtainium → testar o editor no celular (teclado, barra acima do teclado, link → Abrir, Nota rica da PWA, Nova Nota com 1 letra).
+2. Se ok: candidatos da v1.1.
 
 Depois: candidatos da v1.1 (spec §9: upload/câmera, "Neste dia"); opcional: tirar `notas/db` do backup em `~/atualizar.sh` (linha 36) no EC2.
 

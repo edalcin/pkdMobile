@@ -6,11 +6,11 @@ App nativo em Kotlin + Jetpack Compose (Material 3), único usuário, distribuí
 
 ## O que o app faz (v1)
 
-- **Notas:** feed em 2 colunas (favoritas primeiro), criar (FAB), editar texto com salvamento automático (1ª linha = título), Tags, favoritar.
+- **Notas:** feed em 2 colunas (favoritas primeiro), criar (FAB), **editor rico** (o mesmo TipTap da PWA: títulos, listas, checklist, negrito, itálico, link; tabelas, DocLinks e alinhamento ficam iguais) com salvamento automático, Tags (com sugestões), favoritar, apagar (lixeira). Se a Nota tem conteúdo que o app ainda não edita, ela abre só para leitura ("Edite na PWA").
 - **Memórias:** lista por mês, "Nova Memória" (data, título, detalhes), detalhe com `MEM-…`.
 - **Documentos:** Árvore colapsável e detalhe só leitura (corpo, Subdocumentos, Notas relacionadas, Arquivos para ver/baixar, Links externos).
 - **Busca:** a busca híbrida do PKD; sem conexão, busca local com "resultados parciais".
-- **Share:** "Compartilhar → Nota no PKD" em outros apps cria uma Nota `#captura`.
+- **Share:** "Compartilhar → Nota no PKD" em outros apps cria uma Nota `#android` (texto simples).
 - **Offline:** cache local (Room) de Notas, Memórias, Árvore e dos 50 últimos Documentos abertos; toda mudança passa por uma **fila de envio**, e o que o PKD recusa vai para **Não enviados** (ícone na barra de Notas).
 - Ícones Boxicons (os mesmos da PWA); tema claro/escuro segue o sistema. Sem biometria.
 
@@ -30,6 +30,16 @@ Pré-requisitos:
 ```
 
 O APK de debug sai em `app/build/outputs/apk/debug/`; o de release em `app/build/outputs/apk/release/`.
+
+## Bundle do editor
+
+O editor de Notas é o bundle TipTap do PKD, vendorizado em `app/src/main/assets/editor/` (ver [ADR 0002](docs/adr/0002-editor-rico-webview-tiptap.md)). O arquivo `PKD_SHA` guarda o commit do PKD de onde ele saiu. Para atualizar depois de mudar o editor no PKD (Git Bash, com o repositório `pkd` ao lado):
+
+```bash
+scripts/update-editor-bundle   # PKD_DIR=/caminho/do/pkd se não for ../pkd
+```
+
+Commitar juntos o `assets/editor/` e o `PKD_SHA`.
 
 ## Assinatura de release
 
