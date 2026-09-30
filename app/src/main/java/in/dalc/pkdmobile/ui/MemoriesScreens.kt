@@ -47,7 +47,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import `in`.dalc.pkdmobile.data.MemoryEntity
 import `in`.dalc.pkdmobile.data.Notes
-import `in`.dalc.pkdmobile.data.htmlToText
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextLinkStyles
+import androidx.compose.ui.text.fromHtml
+import androidx.compose.ui.text.style.TextDecoration
 import kotlinx.coroutines.launch
 import java.time.Instant
 import java.time.LocalDate
@@ -219,8 +223,16 @@ fun MemoryDetailScreen(id: Long, onBack: () -> Unit) {
             ) {
                 Text(m.fullDate().replaceFirstChar { it.uppercase(ptBR) }, color = MaterialTheme.colorScheme.onSurfaceVariant)
                 Text(m.title, style = MaterialTheme.typography.headlineSmall)
-                val details = remember(m.bodyHtml) { htmlToText(m.bodyHtml) }
-                if (details.isNotEmpty()) Text(details)
+                // HTML, not htmlToText: the Links no corpo stay clickable (tap opens the browser).
+                val linkColor = MaterialTheme.colorScheme.primary
+                val details = remember(m.bodyHtml, linkColor) {
+                    val s = AnnotatedString.fromHtml(
+                        m.bodyHtml,
+                        TextLinkStyles(SpanStyle(color = linkColor, textDecoration = TextDecoration.Underline)),
+                    )
+                    s.subSequence(0, s.text.trimEnd().length)
+                }
+                if (details.text.isNotBlank()) Text(details)
             }
         }
     }

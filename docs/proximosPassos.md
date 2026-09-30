@@ -90,6 +90,12 @@ Atualizado em 2026-09-28.
   - Conteúdo que o bundle não conhece (`onLossCheck` não ok): banner "Edite na PWA", barra escondida, nunca salva.
   - Link → balão Abrir (navegador); DocLink → Nota do cache ou detalhe do Documento.
 
+- **Link no corpo (2026-09-30, sem versão ainda).** Decisões do grilling (Q1–Q7) em `../pkd/docs/proximosPassos.md` §"Link no corpo"; termo no glossário do PKD.
+  - O PKD cria o link para toda URL `http(s)://` na gravação. Por isso a Memória nova ("Detalhes") e o share continuam como texto simples: o app recebe o HTML com link quando a fila envia o item e no refresh. Offline, "Na fila", o texto aparece sem link.
+  - Detalhe da Memória: `AnnotatedString.fromHtml` em vez de `htmlToText`. O link fica azul e sublinhado, e um toque abre o navegador. O card da Nota continua em texto puro.
+  - Bundle do editor atualizado: só `http(s)://` vira link quando você digita, como no PKD. No editor, o toque no link continua abrindo o balão "Abrir" (Q6).
+  - Testado no emulador contra um PKD local: o detalhe da Memória mostra o link azul e sublinhado, e um toque abre o Chrome. **Não testado no celular.**
+
 ## Próxima ação (retomar daqui)
 
 Sessão encerrada pelo usuário em 2026-09-28. Estado:
