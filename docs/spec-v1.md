@@ -36,7 +36,7 @@ Referência visual: [`docs/wayfinder/prototypes/01-direcao-visual.prototype.html
 - **Notas (tela inicial):** feed de cartões em 2 colunas (título = 1ª linha, trecho, Tags); favoritas primeiro. FAB → bottom sheet "Nova Nota".
 - **Memórias:** lista cronológica agrupada por mês (dia + dia da semana). FAB → bottom sheet "Nova Memória" (data, título, detalhes).
 - **Documentos:** Árvore colapsável. Sem FAB.
-- **Busca:** campo + resultados agrupados por tipo (Notas, Memórias, Documentos). Offline: busca local com o aviso "resultados parciais".
+- **Busca:** campo + resultados na ordem do PKD (como a PWA), cada um com o ícone do tipo (Nota, Memória, Documento). Offline: busca local com o aviso "resultados parciais". (Até a `v0.11.0`, os resultados eram agrupados por tipo: todas as Notas ficavam acima dos melhores Documentos.)
 - **Detalhe** (tela cheia, sem barra inferior, com voltar):
   - Nota: texto editável com salvamento automático; Tags; favoritar.
   - Memória: data, título, detalhes, `MEM-…`.

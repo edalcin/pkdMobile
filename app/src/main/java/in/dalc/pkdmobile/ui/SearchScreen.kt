@@ -3,6 +3,7 @@ package `in`.dalc.pkdmobile.ui
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
@@ -23,6 +24,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextOverflow
@@ -31,9 +33,13 @@ import `in`.dalc.pkdmobile.data.Notes
 import `in`.dalc.pkdmobile.data.userMessage
 import kotlinx.coroutines.delay
 
-private val kindTitle = mapOf(Notes.Kind.Nota to "Notas", Notes.Kind.Memoria to "Memórias", Notes.Kind.Documento to "Documentos")
+private val kindIcon = mapOf(Notes.Kind.Nota to "bx-note", Notes.Kind.Memoria to "bx-history", Notes.Kind.Documento to "bx-file")
+private val kindName = mapOf(Notes.Kind.Nota to "Nota", Notes.Kind.Memoria to "Memória", Notes.Kind.Documento to "Documento")
 
-/** Busca (spec §3): field + results grouped by type. Offline: local search with "resultados parciais". */
+/**
+ * Busca (spec §3): field + results in the PKD rank order (as the PWA), each with the icon of its type. Grouping by
+ * type put every Nota above the best Documentos. Offline: local search with "resultados parciais".
+ */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SearchScreen(onOpen: (Notes.Hit) -> Unit) {
@@ -81,18 +87,10 @@ fun SearchScreen(onOpen: (Notes.Hit) -> Unit) {
             }
             hits?.let { list ->
                 if (list.isEmpty() && !busy) item { Text("Nada encontrado.", Modifier.padding(top = 8.dp), color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                list.groupBy { it.kind }.toSortedMap().forEach { (kind, group) ->
-                    item(key = "h-$kind") {
-                        Text(
-                            "${kindTitle[kind]} (${group.size})", Modifier.padding(top = 16.dp, bottom = 4.dp),
-                            style = MaterialTheme.typography.titleSmall, color = MaterialTheme.colorScheme.primary,
-                        )
-                    }
-                    items(group, key = { "${it.kind}-${it.id}" }) { hit ->
-                        Text(
-                            hit.title, Modifier.fillMaxWidth().clickable { onOpen(hit) }.padding(vertical = 10.dp),
-                            maxLines = 2, overflow = TextOverflow.Ellipsis,
-                        )
+                items(list, key = { "${it.kind}-${it.id}" }) { hit ->
+                    Row(Modifier.fillMaxWidth().clickable { onOpen(hit) }.padding(vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Boxicons.Icon(kindIcon.getValue(hit.kind), kindName[hit.kind], Modifier.padding(end = 12.dp), size = 20.dp, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        Text(hit.title, maxLines = 2, overflow = TextOverflow.Ellipsis)
                     }
                 }
             }

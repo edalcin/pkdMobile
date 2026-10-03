@@ -1,6 +1,6 @@
 # Próximos Passos
 
-Atualizado em 2026-09-28.
+Atualizado em 2026-10-03.
 
 ## Onde estamos
 
@@ -95,6 +95,12 @@ Atualizado em 2026-09-28.
   - Detalhe da Memória: `AnnotatedString.fromHtml` em vez de `htmlToText`. O link fica azul e sublinhado, e um toque abre o navegador. O card da Nota continua em texto puro.
   - Bundle do editor atualizado: só `http(s)://` vira link quando você digita, como no PKD. No editor, o toque no link continua abrindo o balão "Abrir" (Q6).
   - Testado no emulador contra um PKD local: o detalhe da Memória mostra o link azul e sublinhado, e um toque abre o Chrome. **Não testado no celular.**
+
+- **`v0.11.1`: Busca na ordem do PKD (2026-10-03).** Problema relatado: a Busca do celular "não mostrava" Documentos que a PWA mostra (ex.: "Claudia - Semaglutida").
+  - Causa: o app agrupava por tipo, com as Notas primeiro. A busca híbrida do PKD junta a parte semântica, e muitas Notas sem relação entram no resultado (14 Notas para "semaglutida"). Os melhores Documentos ficavam abaixo delas. Os Documentos estavam no PKD (desde agosto) e na resposta do `GET /api/tree?q=`.
+  - Correção: `SearchScreen` mostra a lista na ordem do PKD, sem grupos, com o ícone do tipo (`bx-note`, `bx-history`, `bx-file`). Spec §3 atualizada.
+  - Testado no emulador contra um PKD local: o Documento que o PKD põe em 1º aparece em 1º, e o toque abre o detalhe.
+  - Achado no PKD, sem correção: o `POST /api/import` não põe o Documento no índice FTS (só o `LIKE` o encontra, no fim da lista) até a 1ª edição.
 
 ## Próxima ação (retomar daqui)
 
