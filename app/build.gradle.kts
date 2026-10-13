@@ -12,7 +12,7 @@ android {
 
     defaultConfig {
         applicationId = "in.dalc.pkdmobile"
-        minSdk = 30
+        minSdk = 31
         targetSdk = 35
         // Release builds take the version from the git tag (v0.1.2 → "0.1.2") and a
         // versionCode that always grows (GitHub Actions run number). Obtainium compares

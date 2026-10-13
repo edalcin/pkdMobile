@@ -76,7 +76,7 @@ Referência visual: [`docs/wayfinder/prototypes/01-direcao-visual.prototype.html
 
 Ver [`docs/adr/0001-stack-kotlin-compose.md`](adr/0001-stack-kotlin-compose.md).
 
-- Kotlin + Jetpack Compose (Material 3), minSdk 30.
+- Kotlin + Jetpack Compose (Material 3), minSdk 31.
 - APK assinado no GitHub Releases pelo GitHub Actions; atualizações pelo Obtainium. A chave de assinatura fica em GitHub Secrets. Dependabot ativo.
 
 ## 8. Pré-requisitos no PKD (antes da v1)

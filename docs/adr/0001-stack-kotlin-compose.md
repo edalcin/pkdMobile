@@ -4,7 +4,7 @@ status: accepted
 
 # App Android em Kotlin + Jetpack Compose, distribuído como APK
 
-A v1 do pkdMobile é um app nativo em **Kotlin + Jetpack Compose (Material 3)**, com minSdk 30 (Android 11). A direção visual A (Notas-first) é uma UI nova em qualquer stack, então reaproveitar o Svelte da PWA traria pouco. As decisões de autenticação e offline (cookies cifrados no Keystore, biometria opcional, share intent fora do bloqueio, fila de envio, cache completo de Notas e Memórias, busca offline) têm todas uma solução first-party no Android: Room, WorkManager, `ACTION_SEND`, Keystore e BiometricPrompt. O corpo de um Documento, só leitura na v1, aparece em uma WebView com o `body_html` já sanitizado pelo PKD.
+A v1 do pkdMobile é um app nativo em **Kotlin + Jetpack Compose (Material 3)**, com minSdk 31 (Android 12). A direção visual A (Notas-first) é uma UI nova em qualquer stack, então reaproveitar o Svelte da PWA traria pouco. As decisões de autenticação e offline (cookies cifrados no Keystore, biometria opcional, share intent fora do bloqueio, fila de envio, cache completo de Notas e Memórias, busca offline) têm todas uma solução first-party no Android: Room, WorkManager, `ACTION_SEND`, Keystore e BiometricPrompt. O corpo de um Documento, só leitura na v1, aparece em uma WebView com o `body_html` já sanitizado pelo PKD.
 
 O tema é Material 3 fixo com os tokens de cor da PWA (`../pkd/frontend/src/styles/app.css`). O modo claro/escuro segue o sistema. Os ícones são Boxicons em vetor.
 
