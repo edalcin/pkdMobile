@@ -19,7 +19,7 @@ Atualizado em 2026-10-03.
   - Feed de Notas em 2 colunas (favoritas primeiro), pull-to-refresh, atualização ao abrir e ao voltar do background.
   - Detalhe: texto simples com salvamento automático (1ª linha = título), Tags (pôr/tirar), favoritar.
   - Logout (ícone na barra de Notas) apaga cache e cookies.
-  - Kotlin + Compose + Material 3, minSdk 31, pacote `in.dalc.pkdmobile`; Memórias, Documentos e Busca ainda vazias.
+  - Kotlin + Compose + Material 3, minSdk 30, pacote `in.dalc.pkdmobile`; Memórias, Documentos e Busca ainda vazias.
 - **PKD em produção com o `GET /api/notes` novo** (`body_html`, `tags`, `updated_at`): os cartões mostram trecho e Tags no celular.
 - **Limites conhecidos:**
   - ~~O app edita a Nota como texto simples~~: resolvido na `v0.10.0` (editor rico).
