@@ -35,7 +35,7 @@ Atualizado em 2026-10-03.
   - Toda mudança vai primeiro ao cache e à fila, e depois ao PKD, em ordem. A Nota nova tem id negativo e mostra "Na fila" até o PKD dar o id real.
   - Edições na mesma Nota enquanto esperam se juntam num item só; editar uma Nota ainda não enviada muda o item `create`.
   - A fila vai a cada mudança e a cada atualização (abrir, voltar do background, pull-to-refresh). Rede/`5xx`/`401`/`429` param a fila e mantêm tudo; outro `4xx` manda o item para **Não enviados** (Copiar, Recriar com o texto editável, Descartar). Ícone com contador na barra de Notas.
-  - Com itens na fila, a atualização não troca o cache das Notas (só as Tags).
+  - ~~Com itens na fila, a atualização não troca o cache das Notas (só as Tags).~~ Desde a `v0.11.2`: a atualização troca o cache sempre, e guarda só a cópia local das Notas/Memórias com item na fila.
   - Logout com fila avisa quantos itens serão perdidos.
   - **Desvio do ADR 0001:** sem WorkManager. A spec não tem sync em background, então a fila roda no processo do app (`Notes.flush`). Adotar WorkManager só se o envio em background passar a ser requisito.
   - O POST de uma Nota com título repetido não falha: o PKD dá outro título ("… (2)").
@@ -101,6 +101,14 @@ Atualizado em 2026-10-03.
   - Correção: `SearchScreen` mostra a lista na ordem do PKD, sem grupos, com o ícone do tipo (`bx-note`, `bx-history`, `bx-file`). Spec §3 atualizada.
   - Testado no emulador contra um PKD local: o Documento que o PKD põe em 1º aparece em 1º, e o toque abre o detalhe.
   - Achado no PKD, sem correção: o `POST /api/import` não põe o Documento no índice FTS (só o `LIKE` o encontra, no fim da lista) até a 1ª edição.
+
+- **`v0.11.2`: mural parado com 1 item na fila (2026-10-25).** Problema relatado: o mural do celular mostrava Notas antigas (Notas já na lixeira/arquivadas, sem a "Escola Britânica"), com "1 na fila".
+  - Causa 1 (PKD): a captura "Resend Inboxes Announcement" chegou ao PKD, mas a resposta não chegou ao app. A Nota foi para a lixeira na PWA. Depois disso, o replay com a mesma `idempotency_key` recebia `500` (índice único `note_key`), e o app tentava de novo para sempre.
+  - Causa 2 (app): com a fila não vazia, o `refresh` não trocava o cache das Notas e Memórias. Um item parado congelava o mural inteiro.
+  - Correção PKD: replay de chave de item na lixeira → `410 Gone` (`store.ErrKeyTrashed`), nas 4 rotas com `idempotency_key`. Teste em `handlers_capture_test.go` (falha com 500 sem a correção).
+  - Correção app: o `refresh` troca o cache sempre e guarda só a cópia local dos ids com item na fila (delete pendente = a Nota fica fora). `410` num item `create`/`capture`/`memory` = feito (sai da fila, não vai para Não enviados).
+  - Testado no emulador contra um PKD local: com o PKD antigo (replay = 500), o mural mostra a Nota nova do servidor e "1 na fila"; com o PKD novo (replay = 410), a fila esvazia, sem Nota duplicada.
+  - O app `v0.11.1` com o PKD novo: o item vai para Não enviados (Descartar) e o mural volta a atualizar.
 
 ## Próxima ação (retomar daqui)
 

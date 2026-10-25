@@ -176,10 +176,6 @@ interface NoteDao {
         clearDocs(); insertDocs(docs); clearTags(); insertTags(tags)
     }
 
-    @Transaction suspend fun replaceTreeAndTags(docs: List<DocEntity>, tags: List<TagEntity>) {
-        clearDocs(); insertDocs(docs); clearTags(); insertTags(tags)
-    }
-
     @Transaction suspend fun clearAll() { clearNotes(); clearMemories(); clearDocs(); clearDocBodies(); clearTags(); clearOutbox() }
 }
 
@@ -280,7 +276,7 @@ object Notes {
         refreshing = true
         error = null
         try {
-            val queueEmpty = flush()
+            flush()
             val notes = JSONArray(Api.request("GET", "/api/notes")).objects().map(::noteFromJson)
             val memories = JSONArray(Api.request("GET", "/api/memories")).objects().mapIndexed { pos, o ->
                 MemoryEntity(
@@ -301,8 +297,18 @@ object Notes {
                 }
             }
             walk(JSONArray(Api.request("GET", "/api/tree")), null)
-            // Items still in the queue live only in the cache: keep it until they go.
-            if (queueEmpty) dao.replaceAll(notes, memories, docs, tags) else dao.replaceTreeAndTags(docs, tags)
+            // Items still in the queue live only in the cache: keep the local copy of those, the PKD copy of
+            // the rest. One stuck item must not freeze the whole mural (it did, when the cache waited for an empty queue).
+            queueLock.withLock {
+                val queued = dao.pending()
+                val noteIds = queued.filter { it.kind != "memory" }.map { it.noteId }.toSet()
+                val memoryIds = queued.filter { it.kind == "memory" }.map { it.noteId }.toSet()
+                dao.replaceAll(
+                    notes.filter { it.id !in noteIds } + dao.notesOnce().filter { it.id in noteIds },
+                    memories + dao.memoriesOnce().filter { it.id in memoryIds },
+                    docs, tags,
+                )
+            }
         } catch (e: Exception) {
             error = e.userMessage()
         } finally {
@@ -396,24 +402,24 @@ object Notes {
     }
 
     /**
-     * Sends the queue in order. Returns true when it is empty. Stops at the first network/5xx
-     * error or 401 (tries again on the next change or refresh); a definitive 4xx moves the item to Não enviados.
+     * Sends the queue in order. Stops at the first network/5xx error or 401 (tries again on the next
+     * change or refresh); a definitive 4xx moves the item to Não enviados.
      */
-    suspend fun flush(): Boolean = queueLock.withLock {
+    suspend fun flush() = queueLock.withLock {
         for (item in dao.pending()) {
             try {
                 send(item)
                 dao.deleteOutbox(item.seq)
             } catch (e: ApiException) {
-                if (e.code !in 400..499 || e.code == 401 || e.code == 429) return@withLock false
-                dao.updateOutbox(item.copy(failed = true, error = e.userMessage()))
+                if (e.code !in 400..499 || e.code == 401 || e.code == 429) return@withLock
+                // 410: an earlier try created it (the reply got lost), and it is in the lixeira now. Done, not Não enviado.
+                if (e.code == 410) dao.deleteOutbox(item.seq) else dao.updateOutbox(item.copy(failed = true, error = e.userMessage()))
                 if (item.kind == "create" || item.kind == "capture") dao.deleteNote(item.noteId)
                 if (item.kind == "memory") dao.deleteMemory(item.noteId)
             } catch (e: IOException) {
-                return@withLock false
+                return@withLock
             }
         }
-        true
     }
 
     private suspend fun send(item: OutboxEntity) {
