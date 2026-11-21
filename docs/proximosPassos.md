@@ -155,7 +155,7 @@ Feito em 2026-09-27: container `notas` removido do EC2. Backup em `~/docker-comp
   - O versionName vem da tag e o versionCode vem do run number do CI. Build local = `0.0.0-dev`.
 - **Assinatura:** o keystore fica em `C:\Users\EDalcin\Documents\chaves\pkdmobile-release.jks`, fora do repositório. Os 4 GitHub Secrets estão configurados.
 - **Dependabot:** o Gradle recebe só patches. Versões minor/major exigem compileSdk 36+. Para adotá-las: subir o compileSdk e o SDK local/CI, e então remover o `ignore` em `.github/dependabot.yml`.
-- **Deploy do PKD (EC2 `98.93.8.1`, chave `C:\Users\EDalcin\.ssh\EC2Geral.pem`):**
+- **Deploy do PKD (EC2 `98.93.8.1`, acesso `ssh ec2`, chave `~/.ssh/EC2`):**
   1. push no `main` do `../pkd` → o workflow **Build and Publish** gera `edge`;
   2. rodar o workflow **Promote to Production** → `stable`;
   3. no EC2: `./atualizar.sh --aplicar`. O script faz backup do compose e dos bancos. Conferir no fim que o container `pkd` foi recriado ("Up X seconds"); se o `pkd` não mudou, o promote ainda não tinha rodado.
